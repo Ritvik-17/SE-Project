@@ -1,0 +1,101 @@
+# Supported financial domains (system scope).
+# status: active = available for projects now; planned = defined, enabled later (problem statement step 18:
+# "Begin with one financial use case, such as loan processing or digital customer onboarding").
+# typical_regulations are starting points for compliance analysis, NOT legal determinations -
+# applicability depends on jurisdiction and must be confirmed by compliance/legal officers.
+# required_roles: stakeholders whose input is expected before a requirement baseline is approved.
+# mandatory_categories: categories the baseline must cover for this domain.
+- id: digital_banking
+  status: planned
+  code: DBK
+  name: Digital and mobile banking
+  description: Internet and mobile channels for accounts, transfers, bill payments, cards and service requests.
+  typical_regulations: [PSD2 / Strong Customer Authentication, GDPR / DPDP Act 2023, RBI Digital Payment Security Controls, WCAG 2.1 accessibility]
+  required_roles: [customer, product_owner, business_analyst, architect_developer, infosec, compliance_legal, operations]
+  mandatory_categories: [functional, security, privacy, usability, availability, audit]
+  key_questions:
+    - {role: customer, category: usability, question: "Which devices, OS versions and languages must the app support?"}
+    - {role: infosec, category: security, question: "What device binding, session timeout and step-up authentication rules apply to mobile transactions?"}
+    - {role: operations, category: availability, question: "What downtime windows are acceptable for the digital channel, and how are customers notified?"}
+- id: loan_processing
+  status: active
+  code: LOAN
+  name: Loan origination and credit assessment
+  description: Application intake, document collection, credit scoring, underwriting, approval, disbursement and servicing.
+  typical_regulations: [RBI Fair Practices Code / Digital Lending Guidelines, ECOA / Reg B (adverse action), Credit bureau data-use rules, KYC/AML]
+  required_roles: [customer, business_analyst, product_owner, risk_management, compliance_legal, infosec, architect_developer]
+  mandatory_categories: [functional, business, regulatory, security, privacy, audit, data]
+  key_questions:
+    - {role: risk_management, category: business, question: "What eligibility, affordability and credit-score thresholds decide approval, and who can override them?"}
+    - {role: compliance_legal, category: regulatory, question: "What must be disclosed to the applicant (APR, fees, rejection reasons) and when?"}
+    - {role: architect_developer, category: integration, question: "Which credit bureaus, core banking and document-verification services must be integrated?"}
+    - {role: business_analyst, category: functional, question: "What are the approval authority levels by loan amount and product?"}
+- id: payments
+  status: planned
+  code: PAY
+  name: Payment processing
+  description: Domestic and cross-border transfers, card payments, UPI/real-time payments, settlement and reconciliation.
+  typical_regulations: [PCI DSS, PSD2 / SCA, RBI Payment and Settlement Systems Act, ISO 20022 messaging, AML / sanctions screening]
+  required_roles: [customer, business_analyst, architect_developer, infosec, compliance_legal, risk_management, operations]
+  mandatory_categories: [functional, security, regulatory, performance, availability, audit, integration]
+  key_questions:
+    - {role: risk_management, category: business, question: "What per-transaction, daily and velocity limits apply, and how are exceptions approved?"}
+    - {role: operations, category: operational, question: "How are failed, duplicate or reversed payments reconciled, and within what cut-off times?"}
+    - {role: architect_developer, category: performance, question: "What peak transactions per second and end-to-end latency must be supported?"}
+- id: fraud_detection
+  status: planned
+  code: FRD
+  name: Fraud detection
+  description: Real-time and batch detection of fraudulent transactions, accounts and behaviour, with case management.
+  typical_regulations: [AML / CFT (FATF recommendations), Suspicious transaction reporting, Model risk management (e.g. SR 11-7), GDPR automated decision-making rules]
+  required_roles: [business_analyst, risk_management, infosec, compliance_legal, architect_developer, operations, auditor_regulator]
+  mandatory_categories: [functional, security, performance, regulatory, audit, data]
+  key_questions:
+    - {role: risk_management, category: business, question: "What false-positive and detection-rate targets are acceptable?"}
+    - {role: operations, category: operational, question: "How are alerts triaged, escalated and closed by investigators, and within what SLA?"}
+    - {role: auditor_regulator, category: audit, question: "What explainability and evidence must be retained for each fraud decision?"}
+- id: insurance_investment
+  status: planned
+  code: INS
+  name: Insurance and investment platforms
+  description: Policy administration, claims, premium and portfolio management, advisory and trading.
+  typical_regulations: [IRDAI / SEBI regulations, IFRS 17, Solvency II, MiFID II suitability, GDPR / DPDP Act 2023]
+  required_roles: [customer, business_analyst, product_owner, compliance_legal, risk_management, architect_developer, operations]
+  mandatory_categories: [functional, business, regulatory, privacy, data, audit]
+  key_questions:
+    - {role: compliance_legal, category: regulatory, question: "What suitability or needs-analysis checks are required before selling a product?"}
+    - {role: business_analyst, category: functional, question: "What are the claim or order lifecycle states and the rules for each transition?"}
+- id: regulatory_reporting
+  status: planned
+  code: REG
+  name: Regulatory reporting
+  description: Collection, validation, aggregation and submission of prudential, statistical and conduct reports.
+  typical_regulations: [Basel III / BCBS 239, RBI XBRL returns, SOX (financial reporting controls), FATCA / CRS]
+  required_roles: [business_analyst, compliance_legal, risk_management, architect_developer, operations, auditor_regulator]
+  mandatory_categories: [regulatory, data, audit, integration, availability]
+  key_questions:
+    - {role: compliance_legal, category: regulatory, question: "Which returns are in scope, with what formats, frequencies and submission deadlines?"}
+    - {role: auditor_regulator, category: audit, question: "What data lineage and reconciliation evidence must accompany each submitted figure?"}
+- id: kyc_onboarding
+  status: active
+  code: KYC
+  name: Customer onboarding and KYC
+  description: Identity verification, due diligence, risk rating, sanctions/PEP screening and account opening.
+  typical_regulations: [KYC / CDD / EDD rules (e.g. RBI KYC Master Direction), AML / sanctions screening, Video-KYC guidelines, GDPR / DPDP Act 2023]
+  required_roles: [customer, business_analyst, compliance_legal, risk_management, infosec, architect_developer, operations]
+  mandatory_categories: [functional, regulatory, privacy, security, usability, audit, data]
+  key_questions:
+    - {role: compliance_legal, category: regulatory, question: "Which identity documents and verification methods are accepted for each customer type?"}
+    - {role: risk_management, category: business, question: "How is the customer risk rating calculated and when is enhanced due diligence triggered?"}
+    - {role: customer, category: usability, question: "How long are customers willing to spend on onboarding, and what causes them to drop off today?"}
+- id: financial_analytics
+  status: planned
+  code: FDA
+  name: Financial data analytics
+  description: Data platforms, dashboards, customer analytics, forecasting and ML models over financial data.
+  typical_regulations: [GDPR / DPDP Act 2023 (purpose limitation), BCBS 239 data aggregation, Model risk management, Data localisation rules]
+  required_roles: [business_analyst, product_owner, architect_developer, infosec, compliance_legal, operations]
+  mandatory_categories: [data, privacy, security, performance, integration, audit]
+  key_questions:
+    - {role: business_analyst, category: data, question: "Which source systems, data refresh frequencies and data-quality thresholds are needed?"}
+    - {role: compliance_legal, category: privacy, question: "For what purposes may customer data be analysed, and which fields must be anonymised?"}

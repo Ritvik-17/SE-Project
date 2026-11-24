@@ -1,0 +1,53 @@
+id: business_analyst
+name: Business analysts
+description: Analysts who model business processes, rules and data, and bridge business teams with technology.
+provides: Business rules, process flows, inputs/outputs, exceptions and data definitions.
+categories:
+  primary: [business, functional, data]
+  secondary: [stakeholder, integration, audit, usability]
+interview:
+  - category: business
+    topic: Objectives and business rules
+    questions:
+      - What business objectives and KPIs should this system improve?
+      - Which business rules, calculations or decision tables govern the process?
+      - Which products, customer segments and channels are in scope and out of scope?
+    example_requirement: The system shall reduce average loan turnaround time from 5 days to 2 days for salaried applicants.
+  - category: functional
+    topic: Current and future workflow
+    questions:
+      - Describe the current workflow step by step, including manual hand-offs.
+      - What are the inputs, outputs and decision points at each step?
+      - What exceptional conditions occur, and how are they handled today?
+    example_requirement: The system shall route applications with incomplete documents back to the applicant with a list of missing items.
+  - category: data
+    topic: Data definitions and quality
+    questions:
+      - Which data entities and fields are needed, and who owns each?
+      - What validation rules and data-quality thresholds apply?
+      - How long must each type of data be retained, and when must it be deleted?
+    example_requirement: The system shall validate applicant income fields against salary-slip data and flag differences above 10%.
+  - category: stakeholder
+    topic: Users and roles
+    questions:
+      - Which user groups interact with the process, and what does each need?
+      - Where do different groups have conflicting expectations?
+    example_requirement: Credit officers need a single view of applicant documents, bureau data and scoring results.
+  - category: integration
+    topic: Systems touched by the process
+    questions:
+      - Which internal and external systems does the process read from or write to?
+      - Which data must be exchanged, and how often?
+    example_requirement: The system shall retrieve customer master data from the core banking system using the customer ID.
+  - category: audit
+    topic: Management reporting
+    questions:
+      - Which reports and dashboards do managers need, how often, and in what format?
+      - Which decisions need to be traceable later, and by whom?
+    example_requirement: The system shall produce a daily report of applications by status, product and branch.
+  - category: usability
+    topic: Staff efficiency
+    questions:
+      - Which screens or steps slow staff down today?
+      - What would make internal users more productive?
+    example_requirement: The system shall pre-fill known customer details for internal users from existing records.

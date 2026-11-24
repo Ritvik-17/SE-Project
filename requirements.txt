@@ -1,0 +1,34 @@
+# Agent orchestration
+langgraph
+langgraph-checkpoint-postgres
+langchain-core
+langchain-openai
+
+# Backend
+fastapi
+uvicorn[standard]
+pydantic-settings
+
+# Database
+sqlalchemy>=2.0
+psycopg[binary]
+psycopg-pool
+pgvector
+
+# Ingestion & protection
+presidio-analyzer
+presidio-anonymizer
+python-multipart
+pypdf
+python-docx
+pyyaml
+
+# Knowledge base: token counting and local reranking
+# (install CPU PyTorch first on machines without a GPU:
+#  pip install torch --index-url https://download.pytorch.org/whl/cpu)
+tiktoken
+sentence-transformers
+
+# Testing
+pytest
+httpx

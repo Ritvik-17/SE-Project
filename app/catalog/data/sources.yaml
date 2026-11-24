@@ -1,0 +1,91 @@
+# Input source types. `structured` sources follow a known format; others are free text.
+# default_sensitivity: public < internal < confidential < restricted (raised automatically if PII is detected).
+- id: stakeholder_conversation
+  name: Stakeholder conversations
+  structured: false
+  default_sensitivity: internal
+  formats: [txt, md]
+  typical_roles: [customer, business_analyst, product_owner, operations]
+  extraction_guidance: >-
+    Informal speech. Separate real needs from opinions, turn implied needs into explicit requirements with
+    lower confidence, and raise clarification questions for vague terms.
+- id: interview_transcript
+  name: Interview transcripts
+  structured: false
+  default_sensitivity: internal
+  formats: [txt, md, docx, pdf]
+  typical_roles: [customer, business_analyst, product_owner, infosec, compliance_legal, risk_management, operations]
+  extraction_guidance: >-
+    Question-and-answer format. Attribute each requirement to the interviewee's answer, not the interviewer's question.
+- id: questionnaire
+  name: Questionnaires
+  structured: true
+  default_sensitivity: internal
+  formats: [json, csv, txt]
+  typical_roles: [customer, business_analyst, infosec, compliance_legal, risk_management, operations, auditor_regulator]
+  extraction_guidance: >-
+    Each answer relates to a question and category. Unanswered or "don't know" answers become open questions.
+- id: email_meeting_notes
+  name: Emails and meeting notes
+  structured: false
+  default_sensitivity: confidential
+  formats: [eml, txt, md, docx]
+  typical_roles: [business_analyst, product_owner, architect_developer, operations]
+  extraction_guidance: >-
+    Contains decisions, action items and chatter. Extract agreed decisions as requirements; treat unresolved
+    discussion points as open questions or potential conflicts.
+- id: requirement_document
+  name: Existing requirement documents
+  structured: false
+  default_sensitivity: internal
+  formats: [docx, pdf, md, txt]
+  typical_roles: [business_analyst, product_owner]
+  extraction_guidance: >-
+    Already written as requirements. Preserve intent, normalise wording to 'The system shall', split compound
+    statements and flag untestable ones.
+- id: policy_procedure
+  name: Banking policies and procedures
+  structured: false
+  default_sensitivity: confidential
+  formats: [pdf, docx, md, txt]
+  typical_roles: [compliance_legal, risk_management, operations, infosec]
+  extraction_guidance: >-
+    Organisational rules. Derive requirements the system must enforce (limits, approvals, segregation of duties),
+    citing the policy clause in source_quote.
+- id: regulatory_document
+  name: Regulatory and compliance documents
+  structured: false
+  default_sensitivity: public
+  formats: [pdf, docx, md, txt]
+  typical_roles: [compliance_legal, auditor_regulator]
+  extraction_guidance: >-
+    Legal obligations. Only derive requirements for obligations clearly applicable to software systems, categorise
+    them as regulatory, quote the clause, and never present an interpretation as final - add an open question
+    for compliance review when applicability is uncertain.
+- id: api_db_spec
+  name: API and database specifications
+  structured: true
+  default_sensitivity: internal
+  formats: [json, yaml, yml, sql, md, txt]
+  typical_roles: [architect_developer]
+  extraction_guidance: >-
+    Technical contracts. Derive integration and data requirements (endpoints, fields, formats, constraints) rather
+    than business features.
+- id: legacy_system_doc
+  name: Legacy-system documentation
+  structured: false
+  default_sensitivity: confidential
+  formats: [pdf, docx, md, txt]
+  typical_roles: [architect_developer, operations]
+  extraction_guidance: >-
+    Describes existing constraints. Derive compatibility, migration, integration and operational requirements;
+    note technical limitations as assumptions or constraints.
+- id: incident_audit_finding
+  name: Incident reports and audit findings
+  structured: false
+  default_sensitivity: restricted
+  formats: [pdf, docx, md, txt]
+  typical_roles: [infosec, operations, auditor_regulator, risk_management]
+  extraction_guidance: >-
+    Past failures and control gaps. Derive preventive and detective requirements that would stop recurrence,
+    usually security, audit, availability or operational.

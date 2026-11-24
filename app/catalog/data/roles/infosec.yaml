@@ -1,0 +1,46 @@
+id: infosec
+name: Information-security teams
+description: CISO office, security architects, SOC and application-security engineers.
+provides: Authentication, authorisation, encryption, fraud and threat controls, and privacy-by-design safeguards.
+categories:
+  primary: [security, privacy]
+  secondary: [audit, availability, integration, operational]
+interview:
+  - category: security
+    topic: Authentication, authorisation and threats
+    questions:
+      - What authentication strength (MFA, step-up) is required for each user type and transaction value?
+      - How are roles, permissions and segregation of duties defined and reviewed?
+      - What are the main threats (account takeover, insider fraud, API abuse), and which controls are mandatory?
+      - What encryption standards apply in transit and at rest, and who manages the keys?
+    example_requirement: The system shall require step-up authentication for transactions exceeding the organisation-approved risk threshold.
+  - category: privacy
+    topic: Personal-data protection
+    questions:
+      - Which data elements are classified as personal or sensitive, and how must they be masked or tokenised?
+      - Who may view full card, account or identity numbers?
+    example_requirement: The system shall mask all but the last four digits of account numbers on every screen and report.
+  - category: audit
+    topic: Security logging
+    questions:
+      - Which security events must be logged, and for how long?
+      - How are logs protected from tampering and forwarded to the SIEM?
+    example_requirement: The system shall send all authentication failures and privilege changes to the SIEM within 1 minute.
+  - category: availability
+    topic: Attack resilience
+    questions:
+      - What DDoS protection and rate limiting are required?
+      - How should the system respond to a detected attack?
+    example_requirement: The system shall rate-limit login attempts to 5 per account per 15 minutes.
+  - category: integration
+    topic: Third-party and API security
+    questions:
+      - What security assessments are required before integrating a third party?
+      - How must APIs be authenticated, authorised and monitored?
+    example_requirement: The system shall only accept API calls through the bank's API gateway with OAuth 2.0 client credentials.
+  - category: operational
+    topic: Vulnerability and incident management
+    questions:
+      - What patching and vulnerability remediation SLAs apply?
+      - What is the incident response process, and what must the system provide to support it?
+    example_requirement: The system shall have critical vulnerabilities remediated within 7 days of disclosure.

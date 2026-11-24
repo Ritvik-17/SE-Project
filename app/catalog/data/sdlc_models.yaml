@@ -1,0 +1,583 @@
+# SDLC selection engine: models, criteria and rules (problem statement step 14, workflow in step 15).
+#
+# Research behind every entry: guide/sdlc_selection_research_and_rules.md. Each rule and matrix column says where
+# it comes from:
+#   PS      problem statement, step 14 decision table
+#   COURSE  CS305 lecture slides "SDLC Selection Criteria" (M. P. Singh, NITK), Topic 2 parts 1-4
+#   R-*     published research and standards (see the guide's reference list)
+#
+# This file is also seeded into the knowledge base as `sdlc-selection-rules`, so a new version can be submitted,
+# approved and audited like any other knowledge item; the engine always uses the in-force version.
+version: "2.2"
+
+# raw   = 100 x (w_topsis x TOPSIS closeness + w_fit x weighted fit) + rule points
+# score = 100 x (1 - exp(-raw / saturation))   -> the % suitability shown to approvers (same order as raw)
+# Both MCDA terms use the same criteria: the project factors AND the course's characteristic categories.
+scoring:
+  w_topsis: 0.5
+  w_fit: 0.5
+  saturation: 50
+  characteristic_weight: 1.2   # weight of each characteristic category relative to a factor's base weight
+
+# ---------- Criterion group 1: project factors (step 13), scored 1-5 ----------
+factors:
+  - {id: requirement_stability, name: Requirement stability, base_weight: 1.0}
+  - {id: regulatory_criticality, name: Regulatory criticality, base_weight: 1.5}
+  - {id: security_risk, name: Security risk, base_weight: 1.5}
+  - {id: complexity, name: Complexity, base_weight: 1.0}
+  - {id: change_frequency, name: Change frequency, base_weight: 1.2}
+  - {id: continuous_delivery_need, name: Continuous-delivery need, base_weight: 1.0}
+  - {id: formal_verification_need, name: Formal-verification need, base_weight: 1.2}
+  - {id: technical_uncertainty, name: Technical uncertainty, base_weight: 1.0}
+  - {id: system_size, name: System size, base_weight: 0.8}
+  - {id: legacy_dependence, name: Legacy-system dependence, base_weight: 0.9}
+  - {id: stakeholder_availability, name: Stakeholder availability, base_weight: 1.0}
+  - {id: testing_documentation_need, name: Testing and documentation need, base_weight: 1.0}
+  - {id: budget_schedule_constraint, name: Budget and schedule constraint, base_weight: 0.9}
+  - {id: failure_consequence, name: Consequence of failure, base_weight: 1.3}
+
+# ---------- Criterion group 2: project characteristics (COURSE, Topic 2 part 4 matrices) ----------
+# Each question is answered yes / no / unknown for the project. A model "fits" a question when the project's answer
+# equals the model's column. Category score = share of answered questions that fit. Unknown answers are skipped.
+#
+# Columns waterfall .. incremental are copied from the course matrices. Columns agile .. agile_devsecops_hybrid
+# are not in the course; they were derived from the research (rationale in the guide, section 4.3).
+#
+# derive: how the answer is filled before the LLM is asked, from measured factors or signals.
+#   human answers (SDLC gate) > derived answers > LLM answers.
+characteristics:
+  - id: requirements
+    name: Requirements
+    questions:
+      - id: req_well_known
+        text: Are the requirements easily defined and/or well known?
+        derive: {factor: requirement_stability, yes: ">=4", no: "<=2"}
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: no, rad: yes, incremental: no,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: req_defined_early
+        text: Can the requirements be defined early in the cycle?
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: no, rad: yes, incremental: yes,
+               agile: no, devsecops: no, agile_v_hybrid: yes, agile_devsecops_hybrid: no}
+      - id: req_change_often
+        text: Will the requirements change often in the cycle?
+        derive: {factor: change_frequency, yes: ">=4", no: "<=2"}
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: no, incremental: no,
+               agile: yes, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: need_demonstrate
+        text: Is there a need to demonstrate the requirements to achieve definition?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: yes, incremental: no,
+               agile: yes, devsecops: no, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: proof_of_concept
+        text: Is a proof of concept required to demonstrate capability?
+        derive: {factor: technical_uncertainty, yes: ">=4", no: "<=2"}
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: yes, incremental: no,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+  - id: project_team
+    name: Project team
+    questions:
+      - id: team_new_to_domain
+        text: Are the majority of team members new to the problem domain for the project?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: no, incremental: no,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: team_new_to_technology
+        text: Are the majority of team members new to the technology domain for the project?
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: yes, rad: no, incremental: yes,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: team_new_to_tools
+        text: Are the majority of team members new to the tools to be used on the project?
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: yes, rad: no, incremental: no,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: team_reassignment
+        text: Are the team members subject to reassignment during the life cycle?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: no, incremental: yes,
+               agile: no, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: training_available
+        text: Is there training available for the project team if required?
+        fits: {waterfall: no, v_model: yes, prototype: no, spiral: no, rad: yes, incremental: yes,
+               agile: yes, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+  - id: user_community
+    name: User community
+    questions:
+      - id: users_limited
+        text: Will the availability of the user representatives be restricted or limited during the life cycle?
+        derive: {factor: stakeholder_availability, yes: "<=2", no: ">=4"}
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: yes, rad: no, incremental: yes,
+               agile: no, devsecops: yes, agile_v_hybrid: no, agile_devsecops_hybrid: no}
+      - id: users_new_to_definition
+        text: Are the user representatives new to system definition?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: no, incremental: yes,
+               agile: yes, devsecops: no, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: users_domain_experts
+        text: Are the user representatives experts in the problem domain?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: no, rad: yes, incremental: yes,
+               agile: yes, devsecops: no, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: users_involved_all_phases
+        text: Do the users want to be involved in all phases of the life cycle?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: no, rad: yes, incremental: no,
+               agile: yes, devsecops: no, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+  - id: project_type_risk
+    name: Project type and risk
+    questions:
+      - id: new_product_direction
+        text: Does the project identify a new product direction for the organisation?
+        fits: {waterfall: no, v_model: no, prototype: yes, spiral: yes, rad: no, incremental: yes,
+               agile: yes, devsecops: no, agile_v_hybrid: no, agile_devsecops_hybrid: yes}
+      - id: system_integration
+        text: Is the project a system integration project?
+        derive: {signal: integration_requirements, yes: ">=3", no: "==0"}
+        fits: {waterfall: no, v_model: yes, prototype: yes, spiral: yes, rad: yes, incremental: yes,
+               agile: yes, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: enhancement_existing
+        text: Is the project an enhancement to an existing system?
+        fits: {waterfall: no, v_model: yes, prototype: no, spiral: no, rad: yes, incremental: yes,
+               agile: yes, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: funding_stable
+        text: Is the funding for the project expected to be stable throughout the life cycle?
+        fits: {waterfall: yes, v_model: yes, prototype: yes, spiral: no, rad: yes, incremental: no,
+               agile: no, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+      - id: long_life
+        text: Is the product expected to have a long life in the organisation?
+        fits: {waterfall: yes, v_model: yes, prototype: no, spiral: yes, rad: no, incremental: yes,
+               agile: yes, devsecops: yes, agile_v_hybrid: yes, agile_devsecops_hybrid: yes}
+
+# ---------- Alternatives ----------
+# ideal_profile: the factor values (1-5) each model suits best (used by TOPSIS and the weighted fit).
+# phases / execution: how the model runs (step 15). Each canonical phase has kinds (what it does) and a recurrence:
+#   once | per_iteration | per_release | per_cycle | continuous
+# The workflow agent fills each phase with project-specific content; the scheduler builds the timeline from them.
+models:
+  - id: waterfall
+    name: Waterfall
+    source: "COURSE PT-1; Royce 1970"
+    description: Sequential phases with sign-off between each; suits clear, fixed requirements, stable technology and short projects.
+    ideal_profile: {requirement_stability: 5, regulatory_criticality: 3, security_risk: 2, complexity: 2,
+                    change_frequency: 1, continuous_delivery_need: 1, formal_verification_need: 3, technical_uncertainty: 1,
+                    system_size: 3, legacy_dependence: 3, stakeholder_availability: 2, testing_documentation_need: 4,
+                    budget_schedule_constraint: 4, failure_consequence: 3}
+    phases:
+      - {name: Requirements, kinds: [requirements], recurrence: once}
+      - {name: Design, kinds: [design], recurrence: once}
+      - {name: Implementation, kinds: [implementation], recurrence: once}
+      - {name: Verification, kinds: [testing, validation], recurrence: once}
+      - {name: Deployment, kinds: [release], recurrence: once}
+      - {name: Maintenance, kinds: [operation], recurrence: continuous}
+    execution:
+      structure: sequential
+      cadence: Each phase runs once, in order, and ends with a formal sign-off before the next starts.
+      components:
+        activities: Phases do not overlap; work products of one phase are the frozen input of the next.
+        security: Security requirements are fixed in Requirements, threat-modelled in Design, coded securely and statically tested in Implementation, penetration-tested in Verification and signed off before Deployment.
+        testing: Test plans are written during Requirements and Design; all test levels execute once in Verification, after the whole build.
+        compliance: Compliance obligations are baselined up front and evidenced at every phase gate; the compliance officer signs off before Deployment.
+        approvals: One formal approval gate at the end of each phase.
+        traceability: The RTM grows phase by phase (requirement to design to code to test) and is complete at the end of Verification.
+  - id: v_model
+    name: V-Model
+    source: "COURSE PT-2; Forsberg & Mooz 1991"
+    description: Each development phase is paired with a test phase; strong verification and validation evidence.
+    ideal_profile: {requirement_stability: 4, regulatory_criticality: 5, security_risk: 4, complexity: 3,
+                    change_frequency: 2, continuous_delivery_need: 1, formal_verification_need: 5, technical_uncertainty: 2,
+                    system_size: 3, legacy_dependence: 4, stakeholder_availability: 2, testing_documentation_need: 5,
+                    budget_schedule_constraint: 3, failure_consequence: 5}
+    phases:
+      - {name: Requirements analysis, kinds: [requirements], recurrence: once, pairs_with: Acceptance testing}
+      - {name: System design, kinds: [design], recurrence: once, pairs_with: System testing}
+      - {name: Architecture design, kinds: [design], recurrence: once, pairs_with: Integration testing}
+      - {name: Module design, kinds: [design], recurrence: once, pairs_with: Unit testing}
+      - {name: Implementation, kinds: [implementation], recurrence: once}
+      - {name: Unit testing, kinds: [testing], recurrence: once}
+      - {name: Integration testing, kinds: [testing], recurrence: once}
+      - {name: System testing, kinds: [testing], recurrence: once}
+      - {name: Acceptance testing, kinds: [validation, release], recurrence: once}
+    execution:
+      structure: v_paired
+      cadence: Sequential down the left side (definition), implementation at the bottom, then verification up the right side; each test level is designed on the left and executed on the right.
+      components:
+        activities: Each definition phase also writes the test specification for its paired verification phase.
+        security: Security requirements and abuse cases in Requirements analysis; threat model in System and Architecture design; SAST in Implementation; security tests at each test level; penetration test in System testing.
+        testing: Acceptance, system, integration and unit tests are designed in the paired definition phase and executed in reverse order after Implementation.
+        compliance: Regulatory requirements are verified at the matching test level; compliance evidence is produced by the paired test reports and signed off in Acceptance testing.
+        approvals: Gate at the end of every phase; each verification gate checks against the paired definition baseline.
+        traceability: Bidirectional traceability between every definition artefact and its paired test level (the V's horizontal links).
+  - id: prototype
+    name: Prototype
+    source: "COURSE PT-2"
+    description: Builds and refines prototypes with end users to discover requirements; suits interaction-heavy systems with unclear needs.
+    ideal_profile: {requirement_stability: 1, regulatory_criticality: 2, security_risk: 2, complexity: 3,
+                    change_frequency: 4, continuous_delivery_need: 2, formal_verification_need: 1, technical_uncertainty: 4,
+                    system_size: 2, legacy_dependence: 2, stakeholder_availability: 5, testing_documentation_need: 2,
+                    budget_schedule_constraint: 2, failure_consequence: 2}
+    phases:
+      - {name: Initial requirements, kinds: [requirements], recurrence: once}
+      - {name: Quick design, kinds: [prototype], recurrence: per_iteration}
+      - {name: Build prototype, kinds: [prototype], recurrence: per_iteration}
+      - {name: User evaluation, kinds: [validation], recurrence: per_iteration}
+      - {name: Refine requirements, kinds: [requirements], recurrence: per_iteration}
+      - {name: Engineer the product, kinds: [design, implementation, testing, release], recurrence: once}
+    execution:
+      structure: iterative
+      iteration_length_weeks: 2
+      iterations: 4
+      iterations_per_release: 0
+      cadence: Short prototype loops with users until the requirements are agreed, then the product is engineered properly once.
+      components:
+        activities: Each loop designs, builds and shows a prototype; feedback refines the requirements for the next loop.
+        security: Prototypes use synthetic data only; threat modelling and SAST apply to the engineered product, not to throw-away prototypes.
+        testing: Prototype loops are evaluated by users; full functional, security and transaction testing happens in Engineer the product.
+        compliance: Compliance reviews the agreed requirements before engineering starts and signs off before release.
+        approvals: Users accept each prototype; the requirement baseline is approved before engineering; release needs production-readiness approval.
+        traceability: Each refined requirement records the prototype loop and user feedback it came from.
+  - id: spiral
+    name: Spiral
+    source: "COURSE PT-3; Boehm 1988"
+    description: Risk-driven iterations with prototyping; suits medium-to-high-risk projects and uncertain, complex requirements.
+    ideal_profile: {requirement_stability: 2, regulatory_criticality: 3, security_risk: 4, complexity: 5,
+                    change_frequency: 3, continuous_delivery_need: 2, formal_verification_need: 3, technical_uncertainty: 5,
+                    system_size: 5, legacy_dependence: 3, stakeholder_availability: 3, testing_documentation_need: 3,
+                    budget_schedule_constraint: 2, failure_consequence: 4}
+    phases:
+      - {name: Objectives and constraints, kinds: [plan, requirements], recurrence: per_cycle}
+      - {name: Risk analysis and prototyping, kinds: [risk, design], recurrence: per_cycle}
+      - {name: Engineering and test, kinds: [implementation, testing], recurrence: per_cycle}
+      - {name: Evaluation and planning, kinds: [review, validation, release], recurrence: per_cycle}
+    execution:
+      structure: cyclic
+      cycles: 3
+      cadence: Repeated risk-driven cycles; each cycle sets objectives, resolves the biggest risks (often with a prototype), engineers and tests the next level of the product, and plans the next cycle.
+      components:
+        activities: The scope of each cycle is chosen by the highest remaining risk.
+        security: Security risks are ranked with the other risks in every cycle; threat modelling happens in risk analysis; SAST and security tests in engineering.
+        testing: Each cycle tests what it built; the final cycle includes full system, security and transaction-integrity testing.
+        compliance: Regulatory risks are part of each risk analysis; compliance reviews each cycle's evaluation and signs off the final release.
+        approvals: A commitment review at the end of every cycle decides whether to continue; the last cycle ends with production-readiness approval.
+        traceability: Each cycle's risks, decisions and delivered requirements are recorded and linked to the requirement IDs.
+  - id: rad
+    name: Rapid Application Development (RAD)
+    source: "COURSE PT-3; Martin 1991"
+    description: Time-boxed, prototype-driven delivery by a small skilled team with continuous user involvement; suits modular systems needed in 2-3 months.
+    ideal_profile: {requirement_stability: 3, regulatory_criticality: 1, security_risk: 2, complexity: 2,
+                    change_frequency: 3, continuous_delivery_need: 3, formal_verification_need: 1, technical_uncertainty: 2,
+                    system_size: 1, legacy_dependence: 2, stakeholder_availability: 5, testing_documentation_need: 1,
+                    budget_schedule_constraint: 5, failure_consequence: 2}
+    phases:
+      - {name: Business modelling, kinds: [requirements], recurrence: per_iteration}
+      - {name: Data modelling, kinds: [design], recurrence: per_iteration}
+      - {name: Process modelling, kinds: [design], recurrence: per_iteration}
+      - {name: Application generation, kinds: [implementation], recurrence: per_iteration}
+      - {name: Testing and turnover, kinds: [testing, release], recurrence: per_iteration}
+    execution:
+      structure: iterative
+      iteration_length_weeks: 3
+      iterations: 3
+      iterations_per_release: 1
+      cadence: Strict time-boxes of a few weeks; each time-box models, generates and turns over one module with users in workshops.
+      components:
+        activities: User workshops drive each time-box; reusable components and code generation shorten construction.
+        security: Security patterns are built into the reusable components; generated code is scanned (SAST) in each time-box.
+        testing: Each module is tested and accepted by users at turnover; regression tests grow with every time-box.
+        compliance: Compliance checks each module at turnover.
+        approvals: Users accept each turned-over module; release needs production-readiness approval.
+        traceability: Workshop decisions and module turnover records link to requirement IDs.
+  - id: incremental
+    name: Incremental / Iterative
+    source: "COURSE PT-3"
+    description: Delivers the system in increments, high-risk parts first; major requirements known up front, details evolve.
+    ideal_profile: {requirement_stability: 3, regulatory_criticality: 3, security_risk: 3, complexity: 4,
+                    change_frequency: 3, continuous_delivery_need: 3, formal_verification_need: 3, technical_uncertainty: 3,
+                    system_size: 4, legacy_dependence: 3, stakeholder_availability: 3, testing_documentation_need: 3,
+                    budget_schedule_constraint: 3, failure_consequence: 4}
+    phases:
+      - {name: Requirements and architecture, kinds: [requirements, design], recurrence: once}
+      - {name: Increment planning, kinds: [plan], recurrence: per_iteration}
+      - {name: Increment design and build, kinds: [design, implementation], recurrence: per_iteration}
+      - {name: Increment testing, kinds: [testing], recurrence: per_iteration}
+      - {name: Increment delivery, kinds: [validation, release], recurrence: per_iteration}
+      - {name: Next increment, kinds: [review], recurrence: per_iteration}
+    execution:
+      structure: iterative
+      iteration_length_weeks: 4
+      iterations: 4
+      iterations_per_release: 1
+      cadence: Architecture once up front, then increments that each add working functionality, highest-risk features first.
+      components:
+        activities: Each increment plans, designs, builds, tests and delivers a slice of the system on the shared architecture.
+        security: Threat model for the architecture up front, updated per increment; SAST per build; security tests per increment.
+        testing: Each increment is tested in full plus regression of earlier increments.
+        compliance: Compliance reviews each delivered increment that touches regulated functions.
+        approvals: Architecture approval once; acceptance and release approval per increment.
+        traceability: Each increment lists the requirement IDs it delivers; the RTM is updated per increment.
+  - id: agile
+    name: Agile (Scrum)
+    source: "PS; Agile Manifesto 2001; Scrum Guide 2020"
+    description: Short iterations with continuous stakeholder feedback; suits frequently changing requirements.
+    ideal_profile: {requirement_stability: 2, regulatory_criticality: 2, security_risk: 2, complexity: 3,
+                    change_frequency: 5, continuous_delivery_need: 4, formal_verification_need: 2, technical_uncertainty: 3,
+                    system_size: 2, legacy_dependence: 2, stakeholder_availability: 5, testing_documentation_need: 2,
+                    budget_schedule_constraint: 2, failure_consequence: 2}
+    phases:
+      - {name: Backlog refinement, kinds: [requirements], recurrence: per_iteration}
+      - {name: Sprint planning, kinds: [plan, design], recurrence: per_iteration}
+      - {name: Sprint execution, kinds: [implementation, testing], recurrence: per_iteration}
+      - {name: Sprint review, kinds: [validation], recurrence: per_iteration}
+      - {name: Retrospective, kinds: [review], recurrence: per_iteration}
+      - {name: Release, kinds: [release], recurrence: per_release}
+    execution:
+      structure: iterative
+      iteration_length_weeks: 2
+      iterations: 6
+      iterations_per_release: 3
+      cadence: Fixed-length sprints; every sprint refines, plans, builds, tests and reviews a potentially shippable increment; releases every few sprints.
+      components:
+        activities: The product owner orders the backlog; the team pulls work into each sprint.
+        security: Security stories and abuse cases in the backlog; threat modelling for risky stories at sprint planning; SAST in the Definition of Done.
+        testing: Automated unit, integration and acceptance tests inside each sprint; regression before each release.
+        compliance: Compliance acceptance criteria on regulated stories; compliance attends reviews of regulated features and approves releases.
+        approvals: Product owner accepts stories at sprint review; release needs production-readiness approval.
+        traceability: Stories carry requirement IDs; commits and tests reference story IDs; the RTM is updated each sprint.
+  - id: devsecops
+    name: DevSecOps
+    source: "PS; NIST SP 800-218; NIST SP 800-204C"
+    description: Continuous integration and delivery with security automated into every stage of the pipeline.
+    ideal_profile: {requirement_stability: 3, regulatory_criticality: 3, security_risk: 5, complexity: 4,
+                    change_frequency: 4, continuous_delivery_need: 5, formal_verification_need: 3, technical_uncertainty: 3,
+                    system_size: 4, legacy_dependence: 2, stakeholder_availability: 4, testing_documentation_need: 3,
+                    budget_schedule_constraint: 3, failure_consequence: 3}
+    phases:
+      - {name: Plan, kinds: [plan, requirements, design], recurrence: per_iteration}
+      - {name: Code, kinds: [implementation], recurrence: continuous}
+      - {name: Build, kinds: [implementation], recurrence: continuous}
+      - {name: Test, kinds: [testing], recurrence: continuous}
+      - {name: Release, kinds: [release], recurrence: per_release}
+      - {name: Deploy, kinds: [release], recurrence: per_release}
+      - {name: Operate, kinds: [operation], recurrence: continuous}
+      - {name: Monitor, kinds: [operation, review], recurrence: continuous}
+    execution:
+      structure: continuous
+      iteration_length_weeks: 2
+      iterations: 6
+      iterations_per_release: 1
+      cadence: Planning per iteration; code, build and test run on every change through an automated pipeline; releases are frequent and gated by automated and human controls.
+      components:
+        activities: Small changes flow continuously through one pipeline from commit to production.
+        security: Threat modelling in Plan; SAST, dependency (SCA) and secret scanning on every commit; DAST and container scanning in Test; runtime monitoring in Operate.
+        testing: Automated tests at every pipeline stage on every change; transaction-integrity suites run before each release.
+        compliance: Policy-as-code checks in the pipeline produce compliance evidence automatically; regulated releases also need compliance approval.
+        approvals: Automated quality and security gates on every change; production releases need production-readiness approval.
+        traceability: Every commit, build, test run and deployment is linked to a work item and requirement ID by the pipeline.
+  - id: agile_v_hybrid
+    name: Agile–V-Model hybrid
+    source: "PS; Kuhrmann et al. 2017; AAMI TIR45"
+    description: Agile delivery inside V-Model verification gates; suits highly regulated products with evolving requirements.
+    ideal_profile: {requirement_stability: 3, regulatory_criticality: 5, security_risk: 4, complexity: 4,
+                    change_frequency: 4, continuous_delivery_need: 3, formal_verification_need: 5, technical_uncertainty: 3,
+                    system_size: 4, legacy_dependence: 4, stakeholder_availability: 3, testing_documentation_need: 5,
+                    budget_schedule_constraint: 3, failure_consequence: 5}
+    phases:
+      - {name: Regulatory requirements baseline, kinds: [requirements], recurrence: once}
+      - {name: Architecture and threat model, kinds: [design], recurrence: once}
+      - {name: Iterative delivery sprints, kinds: [implementation, testing], recurrence: per_iteration}
+      - {name: Integration and system verification, kinds: [testing], recurrence: per_release}
+      - {name: Compliance validation and UAT, kinds: [validation], recurrence: per_release}
+      - {name: Controlled release, kinds: [release], recurrence: per_release}
+    execution:
+      structure: hybrid
+      iteration_length_weeks: 2
+      iterations: 6
+      iterations_per_release: 3
+      cadence: A formal regulatory baseline and architecture up front; agile sprints deliver; every release passes V-Model style integration, system and compliance verification gates.
+      components:
+        activities: Sprints deliver against the approved baseline; changes to regulated requirements go through change control.
+        security: Threat model in the architecture phase, updated when sprints add risky features; SAST in every sprint; security testing in system verification.
+        testing: Unit and acceptance tests in sprints; formal integration, system, transaction-integrity and UAT testing before each release.
+        compliance: Regulatory baseline approved up front; compliance validation and sign-off before every release.
+        approvals: Baseline and architecture approvals once; story acceptance per sprint; verification, compliance and production-readiness approvals per release.
+        traceability: Formal bidirectional RTM (requirement to story to test to release) maintained continuously and audited at each release.
+  - id: agile_devsecops_hybrid
+    name: Agile–DevSecOps hybrid
+    source: "PS; Kuhrmann et al. 2017; NIST SP 800-218"
+    description: Agile sprints delivered through a secured CI/CD pipeline with compliance evidence generated automatically; suits regulated, security-critical products that change often.
+    ideal_profile: {requirement_stability: 3, regulatory_criticality: 4, security_risk: 5, complexity: 4,
+                    change_frequency: 4, continuous_delivery_need: 5, formal_verification_need: 4, technical_uncertainty: 3,
+                    system_size: 4, legacy_dependence: 3, stakeholder_availability: 4, testing_documentation_need: 4,
+                    budget_schedule_constraint: 3, failure_consequence: 4}
+    phases:
+      - {name: Regulatory and security baseline, kinds: [requirements], recurrence: once}
+      - {name: Threat model and secure pipeline setup, kinds: [design], recurrence: once}
+      - {name: Secure sprints (CI with SAST and SCA), kinds: [implementation, testing], recurrence: per_iteration}
+      - {name: Continuous verification and compliance evidence, kinds: [testing, validation], recurrence: continuous}
+      - {name: Gated release with approvals, kinds: [release], recurrence: per_release}
+      - {name: Operate and monitor, kinds: [operation], recurrence: continuous}
+    execution:
+      structure: hybrid
+      iteration_length_weeks: 2
+      iterations: 6
+      iterations_per_release: 2
+      cadence: Regulatory and security baselines and a secured pipeline first; then sprints deliver through the pipeline, which verifies and collects compliance evidence continuously; releases are gated by human approvals.
+      components:
+        activities: Sprint work flows through the secured CI/CD pipeline; regulated changes go through change control.
+        security: Threat model and pipeline hardening up front; SAST, SCA and secret scanning on every commit; DAST before release; runtime monitoring.
+        testing: Automated tests on every change; transaction-integrity and regression suites gate each release.
+        compliance: Policy-as-code and evidence collection run continuously; compliance approves each production release.
+        approvals: Baseline and pipeline approvals once; automated gates per change; production-readiness approval per release.
+        traceability: The pipeline links requirement, story, commit, test and deployment automatically; the RTM is generated from it.
+
+# ---------- Decision rules ----------
+# when: all conditions must hold (AND). when_any: at least one must hold (OR). Both may be combined.
+# Condition keys: a factor id ("change_frequency: '>=4'") or a characteristic answer ("q.funding_stable: 'no'").
+# effects: points added to (or subtracted from) each model's score.
+rules:
+  # PS: problem statement step 14 decision table
+  - id: PS1
+    source: PS
+    when: {requirement_stability: ">=4", formal_verification_need: ">=3"}
+    effects: {waterfall: 8}
+    reason: Stable requirements and extensive approvals favour Waterfall.
+  - id: PS2
+    source: PS
+    when: {formal_verification_need: ">=4"}
+    effects: {v_model: 8}
+    reason: Strict verification and validation favours the V-Model.
+  - id: PS3
+    source: PS
+    when: {technical_uncertainty: ">=4"}
+    effects: {spiral: 10}
+    reason: High uncertainty or technical risk favours Spiral.
+  - id: PS4
+    source: "PS; COURSE PT-1"
+    when: {change_frequency: ">=4"}
+    effects: {agile: 8, waterfall: -15}
+    reason: Frequently changing requirements favour Agile; Waterfall cannot accommodate changing requirements.
+  - id: PS5
+    source: PS
+    when: {continuous_delivery_need: ">=4", security_risk: ">=3"}
+    effects: {devsecops: 10}
+    reason: Continuous secure deployment favours DevSecOps.
+  - id: PS6a
+    source: PS
+    when: {regulatory_criticality: ">=4", change_frequency: ">=3"}
+    effects: {agile_v_hybrid: 10, agile_devsecops_hybrid: 6}
+    reason: High regulation with evolving requirements favours an Agile–V-Model or DevSecOps hybrid.
+  - id: PS6b
+    source: PS
+    when: {regulatory_criticality: ">=4", change_frequency: ">=3", continuous_delivery_need: ">=4"}
+    effects: {agile_devsecops_hybrid: 6}
+    reason: When that regulated, evolving product also needs continuous delivery, the DevSecOps hybrid fits better.
+
+  # COURSE: "when to use" and "disadvantages" slides, Topic 2 parts 1-3
+  - id: C1
+    source: "COURSE PT-1 (Waterfall disadvantages)"
+    when_any: {complexity: ">=4", system_size: ">=4"}
+    effects: {waterfall: -6}
+    reason: Waterfall is a poor model for complex, long or ongoing projects; integration happens as a late big bang.
+  - id: C2
+    source: "COURSE PT-1, PT-2 (when to use Waterfall / V-Model)"
+    when: {technical_uncertainty: ">=4"}
+    effects: {waterfall: -8, v_model: -6}
+    reason: Waterfall and the V-Model assume the technology is understood and not dynamic.
+  - id: C3
+    source: "COURSE PT-2 (V-Model disadvantages)"
+    when: {change_frequency: ">=4"}
+    effects: {v_model: -8}
+    reason: The V-Model cannot handle iterations or dynamic changes in requirements and has no risk-analysis activities.
+  - id: C4
+    source: "COURSE PT-2 (when to use Prototype)"
+    when: {"q.users_involved_all_phases": "yes", "q.need_demonstrate": "yes"}
+    effects: {prototype: 8, rad: 4}
+    reason: Systems with heavy end-user interaction, where requirements must be demonstrated, suit prototyping.
+  - id: C5
+    source: "COURSE PT-2 (Prototype disadvantages); AAMI TIR45"
+    when: {regulatory_criticality: ">=4"}
+    effects: {prototype: -8}
+    reason: Prototype-driven work risks insufficient requirement analysis, which regulated systems cannot accept.
+  - id: C6
+    source: "COURSE PT-3 (when to use RAD)"
+    when_any: {system_size: ">=3", stakeholder_availability: "<=2"}
+    effects: {rad: -10}
+    reason: RAD only suits modular systems buildable in 2-3 months with users involved throughout the life cycle.
+  - id: C7
+    source: "COURSE PT-3 (RAD: minimal planning); RBI ITGRCA 2023"
+    when: {regulatory_criticality: ">=4"}
+    effects: {rad: -8}
+    reason: RAD's minimal planning and documentation conflict with regulated product approval and assurance.
+  - id: C8
+    source: "COURSE PT-3 (when to use Iterative)"
+    when: {requirement_stability: ">=3", change_frequency: ">=3"}
+    effects: {incremental: 6}
+    reason: Major requirements are defined but details evolve, which is the Incremental/Iterative model's home ground.
+  - id: C9
+    source: "COURSE PT-3 (Iterative advantages)"
+    when: {failure_consequence: ">=4", system_size: ">=4"}
+    effects: {incremental: 4}
+    reason: Incremental delivery handles high-risk parts first and suits large, mission-critical projects.
+  - id: C10
+    source: "COURSE PT-3 (Iterative and Spiral disadvantages)"
+    when: {system_size: "<=1"}
+    effects: {incremental: -5, spiral: -5}
+    reason: Incremental and Spiral are not suitable for small projects; management overhead outweighs the benefit.
+  - id: C11
+    source: "COURSE PT-3 (Spiral disadvantages)"
+    when: {technical_uncertainty: "<=2", security_risk: "<=2"}
+    effects: {spiral: -10}
+    reason: Spiral is expensive and not suitable for low-risk projects.
+  - id: C12
+    source: "COURSE PT-3 (when to use Spiral)"
+    when: {budget_schedule_constraint: ">=4", technical_uncertainty: ">=3"}
+    effects: {spiral: 5}
+    reason: With a budget constraint where risk evaluation matters, Spiral's risk-driven cycles pay off.
+
+  # R: published research and standards
+  - id: R1
+    source: "Boehm & Turner 2003 (home grounds: criticality, size)"
+    when: {failure_consequence: ">=4", system_size: ">=4"}
+    effects: {agile: -8, v_model: 4, agile_v_hybrid: 4}
+    reason: Large, life- or money-critical systems sit in the plan-driven home ground; pure Agile under-documents them.
+  - id: R2
+    source: "Boehm & Turner 2003 (home grounds: dynamism, criticality)"
+    when: {change_frequency: ">=4", failure_consequence: "<=2"}
+    effects: {agile: 6}
+    reason: High dynamism with low criticality is Agile's home ground.
+  - id: R3
+    source: "Boehm & Turner 2003 (home grounds: personnel)"
+    when: {"q.team_new_to_domain": "yes", "q.training_available": "no"}
+    effects: {agile: -6, agile_devsecops_hybrid: -4}
+    reason: Agile methods rely on experienced, self-organising people; an inexperienced team without training needs more structure.
+  - id: R4
+    source: "Stacey matrix; Snowden & Boone 2007 (simple domain)"
+    when: {requirement_stability: ">=4", technical_uncertainty: "<=2"}
+    effects: {waterfall: 4}
+    reason: Agreed requirements and certain technology are the simple domain, where plan-driven work is efficient.
+  - id: R5
+    source: "Stacey matrix; Snowden & Boone 2007 (complex domain)"
+    when: {requirement_stability: "<=2", technical_uncertainty: ">=4"}
+    effects: {spiral: 4, prototype: 4, waterfall: -10}
+    reason: Low agreement and low certainty are the complex domain, which needs probe-and-learn cycles, not a fixed plan.
+  - id: R6
+    source: "Kuhrmann et al. 2017; AAMI TIR45"
+    when: {regulatory_criticality: ">=4"}
+    effects: {agile: -8}
+    reason: Pure Agile produces too little formal compliance evidence for highly regulated systems; regulated practice uses hybrids.
+  - id: R7
+    source: "Agile Manifesto 2001 (principle 4)"
+    when: {stakeholder_availability: "<=2"}
+    effects: {agile: -10, devsecops: -5}
+    reason: Agile depends on business people and developers working together daily, which this project cannot count on.
+  - id: R8
+    source: "Forsberg & Mooz 1991; AAMI TIR45"
+    when: {failure_consequence: ">=4", formal_verification_need: ">=4"}
+    effects: {v_model: 5, agile_v_hybrid: 5}
+    reason: Severe consequences of failure with formal verification needs favour V-Model verification gates.
+  - id: R9
+    source: "Forsgren, Humble & Kim 2018 (DORA: loosely coupled architecture)"
+    when: {legacy_dependence: ">=4"}
+    effects: {devsecops: -5, v_model: 4}
+    reason: Tightly coupled legacy dependencies limit continuous deployment and need planned integration testing.
+  - id: R10
+    source: "NIST SP 800-218; PCI DSS v4.0 req. 6.2; ISO/IEC 27001:2022 A.8.25"
+    when: {security_risk: ">=4", continuous_delivery_need: ">=3"}
+    effects: {devsecops: 5, agile_devsecops_hybrid: 5}
+    reason: High security risk with frequent releases needs security built into every pipeline stage (secure SDLC).
+  - id: R11
+    source: "COURSE Topic 1 PT-2 (time, cost, scope); COURSE PT-1"
+    when: {budget_schedule_constraint: ">=4", requirement_stability: ">=4"}
+    effects: {waterfall: 5}
+    reason: A fixed budget and deadline with fixed, well-understood scope favours plan-driven delivery.

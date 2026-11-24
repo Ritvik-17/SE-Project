@@ -1,0 +1,177 @@
+# The 13 conversation topics of the adaptive interview (problem statement, step 7).
+#
+# Each topic is a checklist, not a script:
+#   slots       what a complete answer contains. The interviewer only asks for slots still missing, and a slot
+#               can be filled by an answer given under another topic.
+#   quantified  the slot needs a number, amount, period or named standard. "Fast", "secure" or "as needed" leave it
+#               open and trigger a follow-up.
+#   roles       who is asked. Primary topics are asked first; secondary ones if turns remain. Roles not listed skip it.
+#   categories  the requirement categories the answers feed (used to pick role-specific template questions).
+- id: business_objectives
+  name: Business objectives
+  categories: [business, stakeholder]
+  opening: What business problem should this system solve, and how will you know it has succeeded?
+  slots:
+    - {id: goal, label: Business goal or problem being solved}
+    - {id: success_measure, label: Measurable success criterion (KPI and target), quantified: true}
+    - {id: scope, label: What is in and out of scope}
+  roles:
+    primary: [product_owner, business_analyst]
+    secondary: [risk_management, compliance_legal, customer]
+
+- id: users_roles
+  name: Users and roles
+  categories: [stakeholder, usability, security]
+  opening: Who will use the system, and what does each group need to do with it?
+  slots:
+    - {id: user_groups, label: User groups (internal and external)}
+    - {id: tasks, label: Main tasks of each group}
+    - {id: volumes, label: Number of users per group, quantified: true}
+    - {id: accessibility, label: Channel, language or accessibility needs}
+  roles:
+    primary: [product_owner, business_analyst, customer]
+    secondary: [infosec, operations]
+
+- id: existing_workflow
+  name: Existing workflow
+  categories: [business, functional, operational]
+  opening: Walk me through how this work is done today, step by step.
+  slots:
+    - {id: steps, label: Current process steps}
+    - {id: tools, label: Systems or tools used today}
+    - {id: pain_points, label: Pain points and delays}
+    - {id: handoffs, label: Manual steps and handoffs between teams}
+  roles:
+    primary: [business_analyst, operations, customer]
+    secondary: [product_owner, risk_management, project_manager]
+
+- id: inputs_outputs_rules
+  name: Inputs, outputs and business rules
+  categories: [functional, data, business]
+  opening: What information goes into this process, what comes out, and which rules decide the outcome?
+  slots:
+    - {id: inputs, label: Inputs and where they come from}
+    - {id: outputs, label: Outputs, decisions or documents produced}
+    - {id: rules, label: Business rules, calculations or thresholds, quantified: true}
+    - {id: validations, label: Validations applied to inputs}
+  roles:
+    primary: [business_analyst]
+    secondary: [product_owner, risk_management, architect_developer, customer]
+
+- id: exceptions
+  name: Exceptional conditions
+  categories: [functional, operational, availability]
+  opening: What can go wrong in this process, and what should happen when it does?
+  slots:
+    - {id: cases, label: Exception and failure cases}
+    - {id: handling, label: How each case is handled}
+    - {id: escalation, label: Who is notified, and the manual fallback}
+    - {id: customer_comms, label: What the customer is told}
+  roles:
+    primary: [business_analyst, operations]
+    secondary: [customer, architect_developer, risk_management]
+
+- id: data_collection_retention
+  name: Data collection and retention
+  categories: [data, privacy, regulatory]
+  opening: What personal and financial data will the system collect, and how long must it be kept?
+  slots:
+    - {id: data_items, label: Personal or financial data items collected}
+    - {id: purpose_consent, label: Purpose of collection and consent}
+    - {id: retention, label: Retention period, quantified: true}
+    - {id: deletion, label: Archival, deletion or anonymisation at end of life}
+  roles:
+    primary: [compliance_legal, business_analyst]
+    secondary: [infosec, architect_developer, auditor_regulator, customer]
+
+- id: authentication_authorisation
+  name: Authentication and authorisation
+  categories: [security]
+  opening: How should users prove who they are, and who may do what in the system?
+  slots:
+    - {id: authentication, label: Authentication methods (MFA, step-up, biometrics)}
+    - {id: permissions, label: Roles and permissions}
+    - {id: segregation, label: Segregation of duties and maker-checker}
+    - {id: sessions, label: Session timeout and lockout rules, quantified: true}
+  roles:
+    primary: [infosec]
+    secondary: [architect_developer, customer, operations, auditor_regulator]
+
+- id: transaction_limits
+  name: Financial transaction limits
+  categories: [business, functional, regulatory, security]
+  opening: What monetary limits apply to transactions in this system?
+  slots:
+    - {id: limits, label: Limit types and amounts with currency, quantified: true}
+    - {id: period, label: Per-transaction, daily or monthly basis}
+    - {id: override, label: What happens above a limit, and who approves overrides}
+    - {id: governance, label: Who sets and changes limits}
+  roles:
+    primary: [risk_management]
+    secondary: [business_analyst, product_owner, compliance_legal, customer]
+
+- id: audit_reporting
+  name: Audit and reporting
+  categories: [audit, regulatory]
+  opening: Which actions must be recorded for audit, and which reports are needed?
+  slots:
+    - {id: events, label: Events and actions to log}
+    - {id: log_retention, label: Log retention and tamper protection, quantified: true}
+    - {id: reports, label: Reports, recipients and frequency}
+    - {id: regulatory_returns, label: Regulatory returns or filings}
+  roles:
+    primary: [auditor_regulator, compliance_legal]
+    secondary: [business_analyst, infosec, operations, risk_management]
+
+- id: performance_availability
+  name: Performance and availability
+  categories: [performance, availability, operational]
+  opening: How quickly must the system respond, how much load must it handle, and how available must it be?
+  slots:
+    - {id: response_time, label: Response-time target, quantified: true}
+    - {id: volume, label: Peak volume or throughput, quantified: true}
+    - {id: uptime, label: Availability target, quantified: true}
+    - {id: recovery, label: Recovery time and data-loss objectives (RTO and RPO), quantified: true}
+    - {id: maintenance, label: Acceptable maintenance windows}
+  roles:
+    primary: [architect_developer, operations]
+    secondary: [customer, product_owner, risk_management, infosec]
+
+- id: integration
+  name: Integration with existing systems
+  categories: [integration, data]
+  opening: Which existing systems or third parties must this system exchange data with?
+  slots:
+    - {id: systems, label: Systems and third parties}
+    - {id: mechanism, label: Direction and mechanism (API, file, message)}
+    - {id: timing, label: Real-time or batch, and frequency}
+    - {id: failure, label: Behaviour when a connected system is unavailable}
+  roles:
+    primary: [architect_developer]
+    secondary: [business_analyst, operations, infosec]
+
+- id: regulatory_security_constraints
+  name: Regulatory and security constraints
+  categories: [regulatory, security, privacy]
+  opening: Which regulations, standards or internal policies constrain this system?
+  slots:
+    - {id: regulations, label: Applicable regulations or standards by name}
+    - {id: obligations, label: Specific obligations they impose}
+    - {id: controls, label: Required security controls (encryption, data residency, testing)}
+    - {id: deadlines, label: Compliance deadlines or audit dates}
+  roles:
+    primary: [compliance_legal, infosec]
+    secondary: [risk_management, auditor_regulator, architect_developer]
+
+- id: schedule_budget
+  name: Expected schedule and budget
+  categories: [business]
+  opening: When does this need to go live, and what budget is available?
+  slots:
+    - {id: deadline, label: Target go-live date and milestones, quantified: true}
+    - {id: budget, label: Budget ceiling, quantified: true}
+    - {id: flexibility, label: What is fixed and what is flexible (date, scope, cost)}
+    - {id: dependencies, label: Dependencies or constraints on the schedule}
+  roles:
+    primary: [product_owner, project_manager]
+    secondary: [business_analyst, architect_developer]

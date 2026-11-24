@@ -1,0 +1,52 @@
+id: architect_developer
+name: Software architects and developers
+description: Architects, tech leads and engineers who design, build and integrate the solution.
+provides: Technical constraints, integrations, non-functional targets and legacy dependencies.
+categories:
+  primary: [integration, performance, availability, data]
+  secondary: [security, operational, functional]
+interview:
+  - category: integration
+    topic: Interfaces and legacy systems
+    questions:
+      - Which internal, legacy and third-party systems must be integrated, and through which protocols (REST, MQ, SFTP, ISO 8583/20022)?
+      - What are the known limitations of the legacy systems (batch windows, throughput, data formats)?
+      - Who owns each interface contract, and how are changes versioned?
+    example_requirement: The system shall exchange loan disbursement instructions with core banking using the existing ISO 20022 pacs.008 interface.
+  - category: performance
+    topic: Capacity and latency targets
+    questions:
+      - What response-time percentiles and throughput targets must be met?
+      - Which operations are latency-critical and which can be asynchronous?
+    example_requirement: The system shall respond to 95% of credit-score requests within 2 seconds at 200 requests per second.
+  - category: availability
+    topic: Resilience and recovery
+    questions:
+      - What RTO and RPO are required, and is active-active deployment needed?
+      - How should the system degrade when a dependency is unavailable?
+    example_requirement: The system shall queue applications and retry automatically when the credit-bureau service is unavailable.
+  - category: data
+    topic: Data architecture
+    questions:
+      - Which system is the source of truth for each data entity?
+      - What volumes, growth rates and archival strategies are expected?
+      - Are there data-residency or localisation constraints?
+    example_requirement: The system shall store all customer financial data in data centres located within the country.
+  - category: security
+    topic: Secure design constraints
+    questions:
+      - Which identity provider, secrets management and encryption services must be used?
+      - Which secure-coding standards and security testing tools are mandated?
+    example_requirement: The system shall authenticate service-to-service calls using mutual TLS certificates issued by the bank's PKI.
+  - category: operational
+    topic: Build, deploy and observe
+    questions:
+      - What CI/CD, environments and deployment approvals exist?
+      - What logging, metrics and tracing standards apply?
+    example_requirement: The system shall emit structured logs with a correlation ID for every loan application.
+  - category: functional
+    topic: Technical feasibility of features
+    questions:
+      - Which requested features are technically risky or infeasible with current systems?
+      - Which features depend on unavailable data or services?
+    example_requirement: The system shall calculate EMI using the bank's central pricing service rather than a local formula.

@@ -1,0 +1,36 @@
+id: auditor_regulator
+name: Auditors and regulators
+description: Internal audit, external auditors and regulatory inspectors who examine controls and evidence.
+provides: Audit-trail, evidence, control-testing and inspection requirements; findings from past audits.
+categories:
+  primary: [audit, regulatory]
+  secondary: [data, security, privacy]
+interview:
+  - category: audit
+    topic: Audit trail and evidence
+    questions:
+      - What must be captured in the audit trail (who, what, when, before/after values)?
+      - How must audit evidence be produced during an inspection, and how quickly?
+      - Which past audit findings must this system address?
+    example_requirement: The system shall record user, timestamp, action and before/after values for every change to an approved loan.
+  - category: regulatory
+    topic: Inspection expectations
+    questions:
+      - What do inspectors typically test for this type of system?
+      - Which regulatory returns or certifications depend on this system?
+    example_requirement: The system shall generate regulator-requested loan-level data extracts within 2 business days.
+  - category: data
+    topic: Data integrity
+    questions:
+      - How must the completeness and accuracy of records be demonstrated?
+    example_requirement: The system shall prevent deletion of financial transaction records by any user.
+  - category: security
+    topic: Access control assurance
+    questions:
+      - How are user access reviews performed and evidenced?
+    example_requirement: The system shall produce a quarterly user-access report for review by business owners.
+  - category: privacy
+    topic: Privacy compliance evidence
+    questions:
+      - What evidence of consent and data-subject request handling is expected?
+    example_requirement: The system shall produce a report of consent records and data-subject requests for a given period.

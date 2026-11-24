@@ -1,0 +1,48 @@
+id: risk_management
+name: Risk-management teams
+description: Credit, operational, market, fraud and model-risk managers who define risk appetite and controls.
+provides: Risk appetite, limits, risk controls, scoring rules, business-continuity and model-governance needs.
+categories:
+  primary: [business, regulatory, availability]
+  secondary: [security, audit, data, operational]
+interview:
+  - category: business
+    topic: Risk appetite, limits and financial thresholds
+    questions:
+      - What risk appetite, exposure limits and transaction limits apply?
+      - Which risk scores or rules drive decisions, and who can override them?
+      - What are the consequences of a wrong decision (financial loss, customer harm)?
+    example_requirement: The system shall block disbursement when the applicant's debt-to-income ratio exceeds 50% unless approved by a senior credit officer.
+  - category: regulatory
+    topic: Prudential and model-risk obligations
+    questions:
+      - Which prudential or model-risk regulations apply to decisions this system makes?
+      - How must models be validated, monitored and documented?
+    example_requirement: The system shall record the version of the credit-scoring model used for every decision.
+  - category: availability
+    topic: Business continuity
+    questions:
+      - Which business processes are critical, and what maximum tolerable downtime applies?
+      - What manual fallback exists if the system fails?
+    example_requirement: The system shall support a documented manual fallback for disbursement approvals during outages longer than 2 hours.
+  - category: security
+    topic: Fraud controls
+    questions:
+      - Which fraud patterns must be detected or prevented?
+      - Which transactions require dual authorisation (maker-checker)?
+    example_requirement: The system shall enforce maker-checker approval for changes to customer bank-account details.
+  - category: audit
+    topic: Risk reporting
+    questions:
+      - Which risk reports and key risk indicators must be produced, and for whom?
+    example_requirement: The system shall produce a weekly report of limit overrides with approver details.
+  - category: data
+    topic: Risk data quality
+    questions:
+      - Which data elements feed risk calculations, and what accuracy is required?
+    example_requirement: The system shall reject applications where bureau data is older than 30 days.
+  - category: operational
+    topic: Operational risk controls
+    questions:
+      - Which operational risk events must be captured, and how?
+    example_requirement: The system shall log all manual overrides as operational-risk events with a reason code.

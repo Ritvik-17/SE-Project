@@ -1,0 +1,182 @@
+# Official regulatory and standards documents for the knowledge base (problem statement step 5).
+#
+# How to add one:
+#   1. Download the document from the official source (source_url is the landing page; find the current version).
+#   2. Save it in this folder under `file`.
+#   3. Fill in `version` and `effective_from` FROM THE DOCUMENT ITSELF (they are left empty on purpose).
+#   4. Run:  .venv\Scripts\python -m app.kb.seed --sources        (add --approve-as compliance_legal to activate)
+# Entries without a file, version or effective date are skipped and listed as pending.
+#
+# Scope: the two active use cases (loan processing, customer onboarding/KYC), India first.
+
+documents:
+  # ---------------- India: regulation ----------------
+  - doc_key: rbi-digital-lending-directions
+    collection: regulation
+    title: RBI Digital Lending Directions
+    issuer: Reserve Bank of India
+    source_url: https://www.rbi.org.in/Scripts/BS_ViewMasterDirections.aspx
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [loan_processing], entity_types: [bank, nbfc]}
+    file: rbi-digital-lending-directions.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: rbi-fair-practices-code-lenders
+    collection: regulation
+    title: RBI Fair Practices Code for Lenders
+    issuer: Reserve Bank of India
+    source_url: https://www.rbi.org.in/Scripts/BS_ViewMasterCirculardetails.aspx
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [loan_processing], entity_types: [bank, nbfc]}
+    file: rbi-fair-practices-code.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: rbi-kyc-master-direction
+    collection: regulation
+    title: RBI Master Direction — Know Your Customer (KYC) Direction, 2016 (as amended)
+    issuer: Reserve Bank of India
+    source_url: https://www.rbi.org.in/Scripts/BS_ViewMasterDirections.aspx
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [kyc_onboarding, loan_processing], entity_types: [bank, nbfc, payment_aggregator]}
+    file: rbi-kyc-master-direction.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: rbi-it-governance-master-direction
+    collection: regulation
+    title: RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices
+    issuer: Reserve Bank of India
+    source_url: https://www.rbi.org.in/Scripts/BS_ViewMasterDirections.aspx
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [all], entity_types: [bank, nbfc]}
+    file: rbi-it-governance-master-direction.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: rbi-digital-payment-security-controls
+    collection: regulation
+    title: RBI Master Direction on Digital Payment Security Controls
+    issuer: Reserve Bank of India
+    source_url: https://www.rbi.org.in/Scripts/BS_ViewMasterDirections.aspx
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [loan_processing, kyc_onboarding, digital_banking, payments], entity_types: [bank, nbfc]}
+    file: rbi-digital-payment-security-controls.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: dpdp-act-2023
+    collection: regulation
+    title: Digital Personal Data Protection Act, 2023
+    issuer: Government of India (Ministry of Electronics and Information Technology)
+    source_url: https://www.meity.gov.in/
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [all]}
+    file: dpdp-act-2023.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: dpdp-rules
+    collection: regulation
+    title: Digital Personal Data Protection Rules (current notified version)
+    issuer: Government of India (Ministry of Electronics and Information Technology)
+    source_url: https://www.meity.gov.in/
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [all]}
+    file: dpdp-rules.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: pmla-aml-obligations
+    collection: regulation
+    title: Prevention of Money-laundering Act, 2002 and Maintenance of Records Rules
+    issuer: Government of India
+    source_url: https://fiuindia.gov.in/
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [kyc_onboarding, loan_processing]}
+    file: pmla.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: cert-in-directions-2022
+    collection: regulation
+    title: CERT-In Directions on information security practices and incident reporting (2022)
+    issuer: Indian Computer Emergency Response Team (CERT-In)
+    source_url: https://www.cert-in.org.in/
+    license: full_text
+    jurisdictions: [IN]
+    applicability: {domains: [all]}
+    file: cert-in-directions-2022.pdf
+    version: null
+    effective_from: null
+
+  # ---------------- International (secondary) ----------------
+  - doc_key: eu-gdpr
+    collection: regulation
+    title: General Data Protection Regulation (EU) 2016/679
+    issuer: European Parliament and Council of the European Union
+    source_url: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+    license: full_text
+    jurisdictions: [EU]
+    applicability: {domains: [all]}
+    file: eu-gdpr.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: fatf-recommendations
+    collection: regulation
+    title: FATF Recommendations (international AML/CFT standards)
+    issuer: Financial Action Task Force
+    source_url: https://www.fatf-gafi.org/en/publications/Fatfrecommendations/Fatf-recommendations.html
+    license: full_text
+    jurisdictions: [GLOBAL]
+    applicability: {domains: [kyc_onboarding, loan_processing]}
+    file: fatf-recommendations.pdf
+    version: null
+    effective_from: null
+
+  # ---------------- Security standards ----------------
+  - doc_key: pci-dss
+    collection: security_standard
+    title: PCI DSS
+    issuer: PCI Security Standards Council
+    source_url: https://www.pcisecuritystandards.org/document_library/
+    license: full_text
+    jurisdictions: [GLOBAL]
+    applicability: {domains: [all]}
+    file: pci-dss.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: owasp-asvs
+    collection: security_standard
+    title: OWASP Application Security Verification Standard
+    issuer: OWASP Foundation
+    source_url: https://owasp.org/www-project-application-security-verification-standard/
+    license: full_text
+    jurisdictions: [GLOBAL]
+    applicability: {domains: [all]}
+    file: owasp-asvs.pdf
+    version: null
+    effective_from: null
+
+  - doc_key: nist-sp-800-63b
+    collection: security_standard
+    title: NIST SP 800-63B Digital Identity Guidelines — Authentication
+    issuer: National Institute of Standards and Technology
+    source_url: https://csrc.nist.gov/publications/sp800
+    license: full_text
+    jurisdictions: [US, GLOBAL]
+    applicability: {domains: [all]}
+    file: nist-sp-800-63b.pdf
+    version: null
+    effective_from: null

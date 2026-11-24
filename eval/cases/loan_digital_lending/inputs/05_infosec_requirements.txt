@@ -1,0 +1,10 @@
+Information security requirements: digital personal loan
+From: Information Security (Bank A)
+
+- Customers sign in with a one-time password sent to their registered mobile number, and the app is bound to the device.
+- A step-up one-time password is required before the customer e-signs the loan agreement.
+- Customer sessions time out after 10 minutes of inactivity, as required by the information security policy.
+- Staff users such as credit officers sign in through single sign-on with multi-factor authentication.
+- All personal data is encrypted at rest, and all connections use TLS 1.2 or higher.
+- Security events are sent to the SIEM within 5 minutes.
+- The system must be secure.

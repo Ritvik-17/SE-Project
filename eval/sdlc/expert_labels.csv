@@ -1,0 +1,12 @@
+scenario_id,expert_id,expert_role,years_experience,choice_1,choice_2,choice_3,notes
+stable_reporting,author_reference,author,0,waterfall,v_model,incremental,Reference label from the course and research; replace with real expert rows
+core_payment_switch,author_reference,author,0,v_model,agile_v_hybrid,waterfall,Reference label; replace with real expert rows
+ml_credit_scoring_pilot,author_reference,author,0,spiral,prototype,incremental,Reference label; replace with real expert rows
+marketing_mobile_app,author_reference,author,0,agile,prototype,devsecops,Reference label; replace with real expert rows
+fraud_platform_cloud,author_reference,author,0,devsecops,agile_devsecops_hybrid,agile,Reference label; replace with real expert rows
+kyc_regulated_evolving,author_reference,author,0,agile_v_hybrid,v_model,agile_devsecops_hybrid,Reference label; replace with real expert rows
+regulated_digital_lending_cd,author_reference,author,0,agile_devsecops_hybrid,agile_v_hybrid,devsecops,Reference label; replace with real expert rows
+branch_ui_prototype,author_reference,author,0,prototype,agile,spiral,Reference label; replace with real expert rows
+internal_tool_rad,author_reference,author,0,rad,prototype,agile,Reference label; replace with real expert rows
+loan_servicing_increments,author_reference,author,0,incremental,spiral,agile_v_hybrid,Reference label; replace with real expert rows
+loan_digital_lending,author_reference,author,0,agile_v_hybrid,agile_devsecops_hybrid,v_model,Reference label; replace with real expert rows

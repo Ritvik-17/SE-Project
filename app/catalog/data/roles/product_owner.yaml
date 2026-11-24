@@ -1,0 +1,45 @@
+id: product_owner
+name: Product owners
+description: Owners of the product vision, backlog and priorities, accountable for business value and delivery.
+provides: Vision, scope, priorities, release goals, budget and schedule constraints.
+categories:
+  primary: [business, stakeholder, functional]
+  secondary: [usability, performance, operational]
+interview:
+  - category: business
+    topic: Vision, scope, budget and schedule
+    questions:
+      - What problem does this product solve, and how will success be measured?
+      - What is the expected schedule, key milestones and budget ceiling?
+      - What is explicitly out of scope for the first release?
+    example_requirement: The first release shall support personal loans only; home and vehicle loans are deferred to release 2.
+  - category: stakeholder
+    topic: Target users and priorities
+    questions:
+      - Who are the primary and secondary user groups?
+      - Whose needs take priority when they conflict?
+    example_requirement: Self-service applicants are the primary user group; branch-assisted applications are secondary.
+  - category: functional
+    topic: Feature priorities
+    questions:
+      - Which features are must-have, should-have and could-have (MoSCoW)?
+      - Which features are expected to change frequently after launch?
+    example_requirement: The system shall allow product managers to configure interest-rate bands without a code release.
+  - category: usability
+    topic: Product experience
+    questions:
+      - What experience standards or brand guidelines must the product follow?
+      - Which competitor experiences should be matched or exceeded?
+    example_requirement: The system shall follow the bank's digital design system for all customer-facing screens.
+  - category: performance
+    topic: Growth and scale
+    questions:
+      - How many users and transactions are expected at launch and in 3 years?
+      - Are there seasonal or campaign-driven peaks?
+    example_requirement: The system shall support 5,000 concurrent applicants during promotional campaigns.
+  - category: operational
+    topic: Release and change cadence
+    questions:
+      - How often do you expect to release changes?
+      - Who approves releases, and what must be true before go-live?
+    example_requirement: The system shall support fortnightly releases without planned downtime.

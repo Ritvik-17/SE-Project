@@ -1,0 +1,13 @@
+Compliance memo: digital personal loan
+From: Compliance and Legal (Bank A)
+
+The following obligations apply to the digital personal-loan journey under the regulator's digital lending directions and our own policies:
+
+1. Before the borrower signs, the app must show a Key Fact Statement with the annual percentage rate (APR), all fees and charges, and the repayment schedule.
+2. Loan amounts must be disbursed directly into the borrower's own bank account, never through a third-party or pool account.
+3. The borrower must have a cooling-off period of at least 3 days after disbursement in which to exit the loan by repaying the principal and the proportionate APR, without penalty.
+4. The app must show the name and contact details of the grievance redressal officer, and complaints must be tracked to resolution.
+5. Rejected applicants must be told the principal reasons for rejection in writing within 7 days.
+6. Loan files must be retained for 8 years after loan closure; rejected applications must be retained for 2 years from the decision date.
+7. Explicit consent must be captured before the credit report is pulled, and the consent record must be kept.
+8. Every credit decision, override and change to customer data must leave an audit trail recording who did what and when.

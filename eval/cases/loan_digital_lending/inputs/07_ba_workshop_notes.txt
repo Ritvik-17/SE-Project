@@ -1,0 +1,8 @@
+Workshop notes: credit operations (Bank A)
+Facilitator: business analyst. Participants: credit operations, credit officers.
+
+- Credit officers need a work queue of referred applications. Each referred application must be decided within 4 working hours.
+- Salary slips and bank statements are read by OCR; when the extracted income differs from the declared income, the case goes to manual review.
+- Disbursements must be reconciled against the core banking system every day.
+- To save storage, rejected applications should be deleted after 90 days.
+- Operations wants reports as needed.

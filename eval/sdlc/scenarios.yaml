@@ -1,0 +1,49 @@
+# SDLC recommendation benchmark (step 19): project scenarios for experienced architects and project managers.
+# Experts read `description` only (not the factors or the engine's answer) and record their choice in
+# expert_labels.csv. The engine ranks the same scenario from `factors` (1-5) and `answers` (course questions).
+# Factors not listed default to 3.
+scenarios:
+  - id: stable_reporting
+    description: Replace a monthly regulatory returns spreadsheet with a reporting application. Requirements are fully specified by the regulator's template and will not change; fixed budget and deadline; well-known technology; users available only at sign-off.
+    factors: {requirement_stability: 5, change_frequency: 1, technical_uncertainty: 1, complexity: 2, continuous_delivery_need: 1, budget_schedule_constraint: 5, testing_documentation_need: 4, stakeholder_availability: 2}
+    answers: {req_defined_early: "yes", funding_stable: "yes", new_product_direction: "no"}
+  - id: core_payment_switch
+    description: Upgrade the bank's payment switch connected to the legacy core. Strictly specified interfaces, very high cost of failure, every change needs documented verification evidence for auditors, little change expected.
+    factors: {requirement_stability: 4, regulatory_criticality: 4, formal_verification_need: 5, failure_consequence: 5, testing_documentation_need: 5, change_frequency: 2, legacy_dependence: 5, continuous_delivery_need: 1}
+    answers: {enhancement_existing: "yes", long_life: "yes", system_integration: "yes"}
+  - id: ml_credit_scoring_pilot
+    description: New machine-learning credit scoring for thin-file customers. Nobody is sure what data works, the technology is new to the bank, high risk, budget released in stages.
+    factors: {requirement_stability: 2, complexity: 5, technical_uncertainty: 5, system_size: 5, security_risk: 4, failure_consequence: 4, budget_schedule_constraint: 2}
+    answers: {proof_of_concept: "yes", funding_stable: "no", new_product_direction: "yes", team_new_to_domain: "yes"}
+  - id: marketing_mobile_app
+    description: A customer-facing rewards app for a fintech partnership. Features change every sprint with user feedback, low regulatory exposure, business users available daily, frequent releases.
+    factors: {requirement_stability: 2, regulatory_criticality: 2, change_frequency: 5, continuous_delivery_need: 4, stakeholder_availability: 5, failure_consequence: 2, system_size: 2, formal_verification_need: 2}
+    answers: {users_involved_all_phases: "yes", users_domain_experts: "yes"}
+  - id: fraud_platform_cloud
+    description: Cloud-native fraud-monitoring platform with weekly secure releases, high security exposure, automated pipelines expected by the security team, moderate regulation.
+    factors: {security_risk: 5, continuous_delivery_need: 5, change_frequency: 4, complexity: 4, system_size: 4, stakeholder_availability: 4, legacy_dependence: 2, regulatory_criticality: 3}
+    answers: {long_life: "yes"}
+  - id: kyc_regulated_evolving
+    description: Video-KYC onboarding under strict regulation; regulators keep issuing clarifications so requirements evolve; formal verification evidence is required for every release; severe consequences if wrong.
+    factors: {regulatory_criticality: 5, change_frequency: 4, formal_verification_need: 5, failure_consequence: 5, testing_documentation_need: 5, security_risk: 4, continuous_delivery_need: 3, legacy_dependence: 4}
+    answers: {}
+  - id: regulated_digital_lending_cd
+    description: Digital lending platform under strict regulation with evolving requirements, high security risk, and a need for frequent secure releases through an automated pipeline.
+    factors: {regulatory_criticality: 5, change_frequency: 4, continuous_delivery_need: 5, security_risk: 5, formal_verification_need: 4, stakeholder_availability: 4, failure_consequence: 4}
+    answers: {}
+  - id: branch_ui_prototype
+    description: Redesign of the branch staff loan-entry screens. Users cannot describe what they want until they see it; heavy interaction; low regulation; small team.
+    factors: {requirement_stability: 1, change_frequency: 4, technical_uncertainty: 4, stakeholder_availability: 5, regulatory_criticality: 2, formal_verification_need: 1, system_size: 2}
+    answers: {users_involved_all_phases: "yes", need_demonstrate: "yes", proof_of_concept: "yes"}
+  - id: internal_tool_rad
+    description: Small modular internal tool for the treasury desk needed in two months; users join every workshop; tight deadline, generous budget for tools; very low risk.
+    factors: {system_size: 1, regulatory_criticality: 1, stakeholder_availability: 5, budget_schedule_constraint: 5, formal_verification_need: 1, testing_documentation_need: 1, failure_consequence: 1, complexity: 2}
+    answers: {users_involved_all_phases: "yes", need_demonstrate: "yes", users_domain_experts: "yes", long_life: "no"}
+  - id: loan_servicing_increments
+    description: Large loan-servicing system; major requirements are known, details evolve; deliver highest-risk features first in increments; team members rotate; funding reviewed each year.
+    factors: {requirement_stability: 3, change_frequency: 3, system_size: 4, complexity: 4, failure_consequence: 4}
+    answers: {req_defined_early: "yes", team_reassignment: "yes", funding_stable: "no"}
+  - id: loan_digital_lending
+    description: The evaluation case study (eval/cases/loan_digital_lending) - Bank A's digital personal loan for salaried customers; regulated lending, MVP with release 2 planned, security-critical, fixed go-live date.
+    factors: {requirement_stability: 3, regulatory_criticality: 5, security_risk: 5, complexity: 4, change_frequency: 3, continuous_delivery_need: 3, formal_verification_need: 4, technical_uncertainty: 2, system_size: 3, legacy_dependence: 4, stakeholder_availability: 4, testing_documentation_need: 5, budget_schedule_constraint: 4, failure_consequence: 5}
+    answers: {team_new_to_domain: "no", training_available: "yes", users_involved_all_phases: "yes", new_product_direction: "yes", funding_stable: "yes", long_life: "yes", enhancement_existing: "no"}

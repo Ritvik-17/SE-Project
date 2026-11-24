@@ -1,0 +1,41 @@
+# Expected outputs of the system. status: implemented | planned
+- id: srs
+  name: Software Requirements Specification
+  description: IEEE-29148-style document of the approved requirement baseline.
+  produced_by: documentation_agent
+  status: implemented
+- id: user_stories
+  name: User stories
+  description: "'As a <role>, I want <goal>, so that <benefit>' stories derived from functional requirements."
+  produced_by: documentation_agent
+  status: implemented
+- id: use_cases
+  name: Use cases
+  description: Actor, preconditions, main flow, alternative/exception flows and postconditions.
+  produced_by: documentation_agent
+  status: implemented
+- id: acceptance_criteria
+  name: Acceptance criteria
+  description: Verifiable criteria (Given/When/Then) attached to every requirement.
+  produced_by: extraction_agent
+  status: implemented
+- id: compliance_mapping
+  name: Compliance mappings
+  description: Requirement-to-regulation/policy/control matrix with evidence and gaps.
+  produced_by: compliance_agent
+  status: implemented
+- id: risk_register
+  name: Risk register
+  description: Business, technical, security and compliance risks with likelihood, impact and mitigations.
+  produced_by: risk_analysis_agent
+  status: implemented
+- id: traceability_matrix
+  name: Requirements Traceability Matrix
+  description: Links each requirement to its stakeholder, source document, design, test and approval.
+  produced_by: documentation_agent
+  status: implemented
+- id: sdlc_recommendation
+  name: Recommended SDLC model
+  description: Ranked SDLC models with scores, key drivers and justification.
+  produced_by: sdlc_selection_agent
+  status: implemented

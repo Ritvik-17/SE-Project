@@ -1,0 +1,44 @@
+id: compliance_legal
+name: Compliance and legal officers
+description: Compliance, legal and data-protection officers responsible for regulatory obligations and policy adherence.
+provides: Applicable laws and regulations, disclosure and consent obligations, retention and reporting duties.
+categories:
+  primary: [regulatory, privacy, audit]
+  secondary: [data, security, business]
+interview:
+  - category: regulatory
+    topic: Applicable regulations
+    questions:
+      - Which jurisdictions, regulators and regulations apply to this product?
+      - Which regulatory obligations translate directly into system behaviour (checks, limits, disclosures)?
+      - Are there upcoming regulatory changes the system must accommodate?
+    example_requirement: The system shall provide a Key Fact Statement to the borrower before loan agreement execution.
+  - category: privacy
+    topic: Consent and data-subject rights
+    questions:
+      - What lawful basis and consent are required for each data use?
+      - How must access, correction, erasure and portability requests be supported?
+    example_requirement: The system shall record the timestamp, purpose and version of consent for each credit-bureau enquiry.
+  - category: audit
+    topic: Evidence and regulatory reporting
+    questions:
+      - What records must be kept to demonstrate compliance, and for how long?
+      - Which regulatory reports or notifications must the system generate?
+    example_requirement: The system shall retain loan application records and decision evidence for at least 8 years.
+  - category: data
+    topic: Retention and localisation
+    questions:
+      - What retention and deletion schedules apply to each record type?
+      - Are there data-localisation or cross-border transfer restrictions?
+    example_requirement: The system shall purge rejected-application documents after the regulatory retention period ends.
+  - category: security
+    topic: Mandated controls
+    questions:
+      - Which security controls are mandated by regulation (e.g. PCI DSS, regulator cyber-security frameworks)?
+    example_requirement: The system shall not store card CVV values after authorisation.
+  - category: business
+    topic: Conduct and fair treatment
+    questions:
+      - What fair-treatment, suitability or anti-discrimination rules constrain business decisions?
+      - Which decisions require a documented human review?
+    example_requirement: The system shall give rejected applicants the principal reasons for adverse credit decisions.

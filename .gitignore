@@ -1,0 +1,46 @@
+# ---------- Secrets (never commit) ----------
+.env
+.env.*
+!.env.example
+certs/
+*.pem
+*.key
+*.crt
+*.p12
+
+# ---------- Python ----------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------- Node / frontend (Vite) ----------
+node_modules/
+frontend/dist/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+.vite/
+
+# ---------- Local data / logs ----------
+*.log
+logs/
+*.sqlite3
+*.db
+
+# ---------- IDE / OS ----------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

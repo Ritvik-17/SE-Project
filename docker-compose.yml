@@ -1,0 +1,39 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: rera-db
+    environment:
+      POSTGRES_USER: rera
+      POSTGRES_PASSWORD: rera
+      POSTGRES_DB: rera
+    ports:
+      - "5432:5432"
+    volumes:
+      - rera_pgdata:/var/lib/postgresql/data
+    # Step 17, encryption in transit: TLS on, and network (TCP) connections accepted only over TLS (hostssl).
+    # A self-signed certificate is generated on first start; production uses a CA-issued certificate and
+    # sslmode=verify-full on the client. Local socket connections (health check, docker exec psql) are unaffected.
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        KEY=/var/lib/postgresql/server.key
+        CRT=/var/lib/postgresql/server.crt
+        HBA=/var/lib/postgresql/pg_hba_tls.conf
+        if [ ! -f "$$KEY" ]; then
+          openssl req -new -x509 -days 825 -nodes -subj "/CN=rera-db" -keyout "$$KEY" -out "$$CRT" 2>/dev/null
+          chown postgres:postgres "$$KEY" "$$CRT"
+          chmod 600 "$$KEY"
+        fi
+        echo "local all all trust" > "$$HBA"
+        echo "hostssl all all all scram-sha-256" >> "$$HBA"
+        chown postgres:postgres "$$HBA"
+        exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file="$$CRT" -c ssl_key_file="$$KEY" -c ssl_min_protocol_version=TLSv1.2 -c hba_file="$$HBA"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rera -d rera"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  rera_pgdata:

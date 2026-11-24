@@ -1,0 +1,11 @@
+# Acceptance thresholds for an evaluation run (step 19) and for re-evaluation after significant updates (step 20).
+# A run "passes" when every listed metric meets its threshold. Agree these with the business analysts and the
+# compliance officer before relying on them; they are starting points, not regulatory requirements.
+extraction_f1: {min: 0.60}
+must_have_recall: {min: 0.75}
+ambiguity_recall: {min: 0.60}
+conflict_recall: {min: 0.67}
+control_coverage: {min: 0.70}
+hallucination_rate: {max: 0.05}
+citation_correctness: {min: 0.70}
+traceability_full_chain: {min: 0.70}

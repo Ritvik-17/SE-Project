@@ -1,0 +1,34 @@
+id: project_manager
+name: Project managers
+description: Plan and control delivery (time, cost, scope, quality and risk), staff the team and approve the SDLC model.
+provides: Schedule, budget, team skills and availability, delivery constraints, and the project characteristics used to select the SDLC.
+categories:
+  primary: [business, operational]
+  secondary: [stakeholder, availability]
+interview:
+  - category: business
+    topic: Schedule, budget and delivery constraints
+    questions:
+      - What is the target go-live date, and which milestones are fixed?
+      - What is the budget ceiling, and is funding expected to stay stable for the whole project?
+      - Which of time, cost and scope can flex if needed?
+    example_requirement: The first release shall go live by 31 March with a budget ceiling of INR 2 crore; scope may flex, the date may not.
+  - category: operational
+    topic: Team and delivery capability
+    questions:
+      - Is the team new to this business domain, to the technology, or to the tools?
+      - Are team members likely to be reassigned during the project, and is training available?
+      - What release cadence can operations and change management support?
+    example_requirement: The delivery process shall include a two-week onboarding and training period for team members new to the core-banking APIs.
+  - category: stakeholder
+    topic: Stakeholder availability
+    questions:
+      - How often can business users and approvers take part in reviews and demos?
+      - Who is the single decision-maker when stakeholders disagree?
+    example_requirement: Business representatives shall attend a fortnightly review of delivered functionality.
+  - category: availability
+    topic: Delivery and cut-over risk
+    questions:
+      - What downtime is acceptable during cut-over, and what is the rollback plan?
+      - Which business events (month-end, audits) must releases avoid?
+    example_requirement: Production releases shall not be scheduled within three business days of month-end close.

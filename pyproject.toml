@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = ["real_auth: use real sign-in, MFA and RBAC instead of the test principal"]

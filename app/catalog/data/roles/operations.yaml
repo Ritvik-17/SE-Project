@@ -1,0 +1,44 @@
+id: operations
+name: Operations personnel
+description: Back-office, IT operations, support desk, reconciliation and batch-processing teams.
+provides: Day-to-day running, support, monitoring, batch and reconciliation needs.
+categories:
+  primary: [operational, availability, performance]
+  secondary: [audit, usability, integration]
+interview:
+  - category: operational
+    topic: Running and supporting the system
+    questions:
+      - What monitoring, alerting and on-call support is required?
+      - Which batch jobs, cut-off times and end-of-day processes are involved?
+      - How are exceptions, failed transactions and customer complaints handled?
+    example_requirement: The system shall alert the operations team within 5 minutes when any disbursement batch fails.
+  - category: availability
+    topic: Service hours and maintenance
+    questions:
+      - What service hours and maintenance windows apply?
+      - What is the escalation path during an outage?
+    example_requirement: The system shall allow planned maintenance only between 01:00 and 04:00 on Sundays.
+  - category: performance
+    topic: Operational throughput
+    questions:
+      - How many cases, transactions or files must be processed per day and within what time?
+      - Where do queues or backlogs build up today?
+    example_requirement: The system shall complete the end-of-day loan interest accrual batch within 45 minutes.
+  - category: audit
+    topic: Reconciliation and operational reports
+    questions:
+      - What reconciliations are performed, how often, and against which systems?
+      - Which operational reports are needed?
+    example_requirement: The system shall reconcile disbursed amounts with core banking daily and report mismatches.
+  - category: usability
+    topic: Back-office efficiency
+    questions:
+      - Which manual or repetitive tasks should be automated?
+      - What information do support staff need to resolve customer queries quickly?
+    example_requirement: The system shall let support staff search applications by customer ID, mobile number or application number.
+  - category: integration
+    topic: File and system hand-offs
+    questions:
+      - Which files or messages are exchanged with other teams or systems, and how are failures handled?
+    example_requirement: The system shall retry failed outbound files up to 3 times before raising an alert.

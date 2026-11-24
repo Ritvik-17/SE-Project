@@ -1,0 +1,47 @@
+id: customer
+name: Customers and end users
+description: Retail/corporate customers, applicants, policyholders and branch or call-centre staff who use the system directly.
+provides: Needs, journeys, pain points and experience expectations in their own words.
+categories:
+  primary: [stakeholder, functional, usability]
+  secondary: [privacy, performance, availability]
+interview:
+  - category: stakeholder
+    topic: Goals and pain points
+    questions:
+      - What are you trying to achieve when you use this service?
+      - What frustrates you most about how this works today?
+      - Which tasks do you do most often, and how often?
+    example_requirement: Loan applicants need to know the status of their application at any time without calling the bank.
+  - category: functional
+    topic: Journeys and features
+    questions:
+      - Walk me through the steps you take from start to finish.
+      - What information do you expect to enter, and what do you expect to receive back?
+      - What should happen if you make a mistake or want to cancel midway?
+    example_requirement: The system shall allow applicants to save an incomplete loan application and resume it within 30 days.
+  - category: usability
+    topic: Experience and accessibility
+    questions:
+      - Which devices, channels and languages do you use?
+      - Do you or other users have accessibility needs (vision, hearing, motor)?
+      - How long would you be willing to spend completing this task?
+    example_requirement: The system shall let applicants complete a loan application in under 10 minutes on a mobile device.
+  - category: privacy
+    topic: Trust and personal data
+    questions:
+      - Which personal details are you comfortable sharing, and which concern you?
+      - How would you like to be asked for consent and notified about data use?
+    example_requirement: The system shall show applicants what personal data is collected and obtain explicit consent before credit-bureau checks.
+  - category: performance
+    topic: Speed expectations
+    questions:
+      - How quickly do you expect a response or decision?
+      - At what point would a delay make you abandon the task?
+    example_requirement: The system shall display an in-principle loan decision within 60 seconds of submission.
+  - category: availability
+    topic: When the service is needed
+    questions:
+      - At what times of day and week do you need this service?
+      - What should happen if the service is unavailable when you need it?
+    example_requirement: The system shall make the loan-status service available 24x7 with at least 99.5% monthly uptime.

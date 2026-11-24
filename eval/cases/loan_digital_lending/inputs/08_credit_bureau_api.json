@@ -1,0 +1,50 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Credit bureau report API (anonymised)",
+    "version": "2.1",
+    "description": "Returns the applicant's credit score and report. Requires a consent identifier captured from the applicant before the call."
+  },
+  "paths": {
+    "/v2/credit-report": {
+      "post": {
+        "summary": "Fetch a credit report and score for an applicant",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["pan", "consent_id", "purpose"],
+                "properties": {
+                  "pan": {"type": "string", "description": "Applicant PAN"},
+                  "consent_id": {"type": "string", "description": "Identifier of the applicant's recorded consent"},
+                  "purpose": {"type": "string", "enum": ["new_loan"]}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Credit report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "score": {"type": "integer", "minimum": 300, "maximum": 900},
+                    "active_loans": {"type": "integer"},
+                    "monthly_obligations": {"type": "number"},
+                    "report_id": {"type": "string"}
+                  }
+                }
+              }
+            }
+          },
+          "503": {"description": "Bureau unavailable; retry later"}
+        }
+      }
+    }
+  }
+}

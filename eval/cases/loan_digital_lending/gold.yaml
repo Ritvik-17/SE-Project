@@ -1,0 +1,95 @@
+# Gold standard ("answer key") for the loan_digital_lending case.
+# Written from the eight inputs by the project author. Before using results in a report, have a business analyst
+# review this list; disagreements should be resolved and recorded in `review_log`.
+#
+# requirements   what a careful analyst extracts. `sources` = input files; `must` = must-have for completeness;
+#                `ambiguous` = the stakeholder's wording is vague and needs clarification;
+#                `expected_kb` = knowledge-base documents a correct citation would come from (empty = none seeded).
+# conflicts      pairs of gold requirements that cannot both hold (stakeholder conflicts across roles).
+# policy_contradictions  gold requirements that contradict an approved policy in the knowledge base.
+# controls       regulatory and security controls the final baseline should contain; `keywords` is any-of groups,
+#                a control is covered when one requirement or compliance obligation contains all words of a group
+#                (or is semantically close to the description).
+version: "1.0"
+review_log: []
+
+requirements:
+  # ---- Customer (01)
+  - {id: G01, statement: "The system shall let salaried customers apply for a personal loan entirely in a mobile app.", categories: [functional, stakeholder], sources: [01], must: true}
+  - {id: G02, statement: "The app shall be available in Hindi and English.", categories: [usability], sources: [01], must: false}
+  - {id: G03, statement: "The application process shall be fast and user-friendly.", categories: [usability, performance], sources: [01], must: false, ambiguous: true}
+  - {id: G04, statement: "The system shall show the Key Fact Statement with EMI, APR, all fees and the repayment schedule before the borrower accepts or signs.", categories: [regulatory, functional], sources: [01, 04], must: true, expected_kb: []}
+  - {id: G05, statement: "Customers shall be able to upload salary slips and bank statements from the phone.", categories: [functional], sources: [01], must: true}
+  - {id: G06, statement: "The customer session shall last at least 30 minutes so customers are not logged out while uploading documents.", categories: [usability, security], sources: [01], must: false, expected_kb: [policy-information-security, security-control-baseline]}
+  - {id: G07, statement: "Customers shall be able to track the status of their application in the app.", categories: [functional], sources: [01], must: true}
+  - {id: G08, statement: "Rejected applicants shall be told the principal reasons for rejection in writing within 7 days.", categories: [regulatory, functional], sources: [01, 04], must: true, expected_kb: [policy-credit, process-loan-origination]}
+  - {id: G09, statement: "Sanctioned loan amounts shall be disbursed directly to the borrower's own bank account on the same day.", categories: [functional, regulatory], sources: [01, 04], must: true, expected_kb: []}
+  # ---- Product owner (02)
+  - {id: G10, statement: "Release 1 shall cover unsecured personal loans to salaried customers from INR 50,000 to INR 10,00,000 with tenures of 12 to 60 months.", categories: [business], sources: [02], must: true, expected_kb: [policy-credit]}
+  - {id: G11, statement: "The system shall automatically approve loans up to INR 10 lakh without manual review.", categories: [business, functional], sources: [02], must: false, expected_kb: [policy-credit]}
+  - {id: G12, statement: "Sales agents shall see their pipeline of leads and the status of each application they sourced.", categories: [functional], sources: [02], must: false}
+  - {id: G13, statement: "The product shall increase digital personal-loan disbursals by 30% within 12 months of launch.", categories: [business], sources: [02], must: false}
+  - {id: G14, statement: "Release 1 shall go live by 31 March within a budget of INR 2 crore.", categories: [business], sources: [02], must: false}
+  # ---- Risk management (03)
+  - {id: G15, statement: "The system shall check eligibility: age 21 to 60, at least 12 months of continuous employment and a credit score of at least 700.", categories: [functional, business], sources: [03], must: true, expected_kb: [policy-credit]}
+  - {id: G16, statement: "The system shall reject applications whose FOIR including the proposed EMI exceeds 50% of net monthly income.", categories: [functional, business], sources: [03], must: true, expected_kb: [policy-credit]}
+  - {id: G17, statement: "The automated decision engine shall approve only loans up to INR 5 lakh within policy; above INR 5 lakh a credit officer approves and above INR 15 lakh the regional credit head.", categories: [business, functional], sources: [03], must: true, expected_kb: [policy-credit]}
+  - {id: G18, statement: "Every override shall be recorded with a reason code and approver identity, and the preparer cannot approve the same case (maker-checker).", categories: [audit, security], sources: [03], must: true, expected_kb: [policy-credit, policy-access-control]}
+  - {id: G19, statement: "The system shall detect duplicate applications using the same PAN or device within 30 days and refer them to the fraud team.", categories: [security, functional], sources: [03], must: true}
+  - {id: G20, statement: "The system shall produce a monthly portfolio report with approval rates and 30+ DPD delinquency for the risk committee.", categories: [audit, business], sources: [03], must: false, expected_kb: [policy-credit]}
+  # ---- Compliance (04)
+  - {id: G21, statement: "The borrower shall have a cooling-off period of at least 3 days after disbursement to exit by repaying principal and proportionate APR without penalty.", categories: [regulatory, functional], sources: [04], must: true, expected_kb: []}
+  - {id: G22, statement: "The app shall show the grievance redressal officer's contact details and track complaints to resolution.", categories: [regulatory, functional], sources: [04], must: true, expected_kb: [process-loan-origination]}
+  - {id: G23, statement: "Loan files shall be retained for 8 years after closure and rejected applications for 2 years from the decision date.", categories: [data, regulatory], sources: [04], must: true, expected_kb: [policy-data-retention]}
+  - {id: G24, statement: "The system shall capture explicit consent before pulling the credit report and keep the consent record.", categories: [privacy, regulatory], sources: [04, 08], must: true}
+  - {id: G25, statement: "Every credit decision, override and change to customer data shall leave an audit trail of who did what and when.", categories: [audit], sources: [04], must: true, expected_kb: [process-loan-origination, policy-information-security]}
+  # ---- Information security (05)
+  - {id: G26, statement: "Customers shall sign in with an OTP to the registered mobile number and the app shall be bound to the device.", categories: [security], sources: [05], must: true, expected_kb: [policy-information-security, security-control-baseline]}
+  - {id: G27, statement: "A step-up OTP shall be required before the customer e-signs the loan agreement.", categories: [security], sources: [05], must: true, expected_kb: [security-control-baseline, policy-information-security]}
+  - {id: G28, statement: "Customer sessions shall time out after 10 minutes of inactivity.", categories: [security], sources: [05], must: true, expected_kb: [policy-information-security, security-control-baseline]}
+  - {id: G29, statement: "Staff users shall sign in through single sign-on with multi-factor authentication.", categories: [security], sources: [05], must: true, expected_kb: [policy-information-security, policy-access-control]}
+  - {id: G30, statement: "Personal data shall be encrypted at rest and all connections shall use TLS 1.2 or higher.", categories: [security, privacy], sources: [05], must: true, expected_kb: [policy-information-security, security-control-baseline]}
+  - {id: G31, statement: "Security events shall be sent to the SIEM within 5 minutes.", categories: [security, audit], sources: [05], must: false, expected_kb: [policy-information-security, security-control-baseline]}
+  - {id: G32, statement: "The system must be secure.", categories: [security], sources: [05], must: false, ambiguous: true}
+  # ---- Architecture (06, 08)
+  - {id: G33, statement: "The system shall fetch the credit report from the bureau API over mutual TLS within 3 seconds at the 95th percentile.", categories: [integration, performance], sources: [06, 08], must: true, expected_kb: [security-control-baseline]}
+  - {id: G34, statement: "If the credit bureau is unavailable, the application shall move to the manual underwriting queue.", categories: [integration, availability], sources: [06, 08], must: true}
+  - {id: G35, statement: "Loan accounts shall be created in the core banking system through a nightly batch file.", categories: [integration], sources: [06], must: true}
+  - {id: G36, statement: "Funds shall be disbursed in real time through the payments hub IMPS API.", categories: [integration], sources: [06], must: true}
+  - {id: G37, statement: "The platform shall support 2,000 concurrent applicants.", categories: [performance], sources: [06], must: false}
+  - {id: G38, statement: "The platform shall be 99.9% available monthly, excluding maintenance on Sundays 01:00-03:00.", categories: [availability], sources: [06], must: true}
+  # ---- Credit operations workshop (07)
+  - {id: G39, statement: "Credit officers shall have a work queue of referred applications, each decided within 4 working hours.", categories: [functional, operational], sources: [07], must: true}
+  - {id: G40, statement: "Salary slips and bank statements shall be read by OCR, with manual review when extracted income differs from declared income.", categories: [functional, data], sources: [07], must: false}
+  - {id: G41, statement: "Disbursements shall be reconciled against the core banking system daily.", categories: [operational, audit], sources: [07], must: true}
+  - {id: G42, statement: "Rejected applications shall be deleted after 90 days to save storage.", categories: [data], sources: [07], must: false, expected_kb: [policy-data-retention]}
+  - {id: G43, statement: "Operations shall get reports as needed.", categories: [operational], sources: [07], must: false, ambiguous: true}
+
+conflicts:
+  - {pair: [G11, G17], why: "Instant automated approval up to INR 10 lakh vs automated approval only up to INR 5 lakh"}
+  - {pair: [G06, G28], why: "Session of at least 30 minutes vs 10-minute inactivity timeout"}
+  - {pair: [G42, G23], why: "Delete rejected applications after 90 days vs retain them for 2 years"}
+
+policy_contradictions:
+  - {id: G11, kb: policy-credit, clause: "5.1 automated approval up to INR 5,00,000"}
+  - {id: G06, kb: policy-information-security, clause: "1.4 customer sessions time out after 10 minutes"}
+  - {id: G42, kb: policy-data-retention, clause: "2.4 rejected applications kept 2 years"}
+
+controls:
+  - {id: C01, description: Key Fact Statement with APR and fees before signing, keywords: [[key fact], [apr, fee]]}
+  - {id: C02, description: Disbursement directly to the borrower's own bank account, keywords: [[disburs, borrower, account]]}
+  - {id: C03, description: Cooling-off period to exit the loan, keywords: [[cooling]]}
+  - {id: C04, description: Grievance redressal officer details and complaint tracking, keywords: [[grievance]]}
+  - {id: C05, description: Principal reasons for rejection communicated within 7 days, keywords: [[reject, reason]]}
+  - {id: C06, description: Retention of loan files 8 years and rejected applications 2 years, keywords: [[retain, 8 years], [retention, years]]}
+  - {id: C07, description: Explicit consent before credit report and consent record kept, keywords: [[consent]]}
+  - {id: C08, description: Audit trail of decisions, overrides and data changes, keywords: [[audit trail], [audit log]]}
+  - {id: C09, description: Maker-checker for overrides and approvals, keywords: [[maker-checker], [maker, checker]]}
+  - {id: C10, description: Multi-factor authentication for staff, keywords: [[multi-factor], [mfa]]}
+  - {id: C11, description: Encryption of personal data at rest and TLS in transit, keywords: [[encrypt]]}
+  - {id: C12, description: Session inactivity timeout per security policy, keywords: [[timeout], [time out]]}
+  - {id: C13, description: Customer identity verification (KYC) before lending - not stated in any input; the system should raise it as a gap, keywords: [[kyc], [identity verification], [know your customer]]}
+  - {id: C14, description: Security event logging and monitoring, keywords: [[siem], [security event]]}
+
+# SDLC: the project's expected model is decided by experts (eval/sdlc/expert_labels.csv, scenario loan_digital_lending).
+sdlc_scenario: loan_digital_lending

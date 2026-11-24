@@ -1,0 +1,12 @@
+Architecture note: integrations and non-functional targets
+Author: Solution architect (Bank A)
+
+Credit bureau: the credit report is fetched through the bureau's REST API over mutual TLS. The call must complete within 3 seconds at the 95th percentile. If the bureau is unavailable, the application moves to the manual underwriting queue instead of failing.
+
+Core banking: the core banking system is a legacy platform. Loan accounts are created through a nightly batch file.
+
+Disbursement: funds are sent in real time through the payments hub's IMPS API.
+
+Capacity: the platform must support 2,000 concurrent applicants during marketing campaigns.
+
+Availability: 99.9% monthly availability, excluding the planned maintenance window on Sundays from 01:00 to 03:00.

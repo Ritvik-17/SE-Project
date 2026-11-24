@@ -1,0 +1,20 @@
+Customer interview: digital personal loan (Bank A, anonymised)
+Date: 14 August. Interviewer: business analyst. Participant: salaried customer, Mumbai.
+
+Interviewer: Tell us about the last time you took a loan.
+Customer: I'm Ravi Kumar, you can reach me at ravi.kumar@mailbox.in or 98201 44567. Last time I had to visit the branch three times. This time I want to apply for a personal loan fully on my phone.
+
+Interviewer: Which language would you use?
+Customer: Hindi or English, I switch between both.
+
+Interviewer: What matters most during the application?
+Customer: The process should be fast and user-friendly. Before I accept the offer I must see the EMI, the interest rate and every charge, nothing hidden.
+
+Interviewer: What documents can you provide?
+Customer: I can upload my last three salary slips and six months of bank statements from my phone.
+
+Interviewer: Anything that annoys you in apps today?
+Customer: Being logged out while I'm still uploading documents. The session should last at least 30 minutes.
+
+Interviewer: What should happen after you apply?
+Customer: I want to track the status of my application in the app. If my application is rejected I want to know why. And when the loan is sanctioned, the money should reach my salary account the same day.

@@ -1,0 +1,40 @@
+# The 13 requirement categories (multi-label: one requirement may carry several).
+- id: business
+  name: Business requirements
+  description: High-level organisational goals, business rules, KPIs, risk appetite, budget and schedule constraints.
+- id: stakeholder
+  name: Stakeholder requirements
+  description: Needs and expectations of a specific user group, expressed in their own terms (goals, pain points, journeys).
+- id: functional
+  name: Functional requirements
+  description: Behaviour the system must perform - features, calculations, workflows, business-rule enforcement.
+- id: security
+  name: Security requirements
+  description: Authentication, authorisation, encryption, fraud controls, secure development and threat mitigation.
+- id: privacy
+  name: Privacy requirements
+  description: Personal-data collection, consent, purpose limitation, data-subject rights, minimisation and masking.
+- id: regulatory
+  name: Regulatory requirements
+  description: Obligations imposed by laws, regulators and industry standards (e.g. KYC/AML, PCI DSS, data protection).
+- id: performance
+  name: Performance requirements
+  description: Response time, throughput, capacity and scalability targets.
+- id: availability
+  name: Availability and reliability requirements
+  description: Uptime, recovery time/point objectives, fault tolerance, business continuity and disaster recovery.
+- id: usability
+  name: Usability requirements
+  description: Ease of use, accessibility, language support, error messaging and channel experience.
+- id: data
+  name: Data-management requirements
+  description: Data definitions, quality, lineage, retention, archival, deletion and master-data ownership.
+- id: integration
+  name: Integration requirements
+  description: Interfaces with internal/legacy systems and third parties - APIs, messaging, file exchange, protocols.
+- id: audit
+  name: Audit and reporting requirements
+  description: Audit trails, evidence, management and regulatory reports, reconciliation and non-repudiation.
+- id: operational
+  name: Operational and maintenance requirements
+  description: Monitoring, alerting, support processes, batch operations, deployment, configuration and maintainability.

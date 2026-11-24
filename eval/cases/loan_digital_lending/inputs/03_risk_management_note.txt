@@ -1,0 +1,14 @@
+Risk management note: credit rules for the digital personal loan
+Author: Retail credit risk team (Bank A)
+
+Eligibility: applicants must be 21 to 60 years old, with at least 12 months of continuous employment and a credit score of at least 700.
+
+Affordability: the fixed obligation to income ratio (FOIR), including the proposed EMI, must not exceed 50% of net monthly income.
+
+Approval authority: the automated decision engine may approve loans only up to INR 5 lakh within policy. Loans above INR 5 lakh need a credit officer's approval, and loans above INR 15 lakh need the regional credit head.
+
+Overrides: every override or deviation must be recorded with a reason code and the approver's identity, and the person who prepares a case cannot approve it (maker-checker).
+
+Fraud: detect duplicate applications that use the same PAN or the same device within 30 days, and refer them to the fraud team.
+
+Reporting: a monthly portfolio report to the risk committee with approval rates and 30+ days-past-due delinquency.
