@@ -22,12 +22,12 @@
 - id: compliance_mapping
   name: Compliance mappings
   description: Requirement-to-regulation/policy/control matrix with evidence and gaps.
-  produced_by: compliance_agent
+  produced_by: compliance_security_agent
   status: implemented
 - id: risk_register
   name: Risk register
   description: Business, technical, security and compliance risks with likelihood, impact and mitigations.
-  produced_by: risk_analysis_agent
+  produced_by: review_agent
   status: implemented
 - id: traceability_matrix
   name: Requirements Traceability Matrix
@@ -37,5 +37,5 @@
 - id: sdlc_recommendation
   name: Recommended SDLC model
   description: Ranked SDLC models with scores, key drivers and justification.
-  produced_by: sdlc_selection_agent
+  produced_by: planning_agent
   status: implemented

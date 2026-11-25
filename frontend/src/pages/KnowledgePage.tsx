@@ -5,7 +5,7 @@ import { api, type KbDetail, type KbDoc, type KbHit, type KbImpact, type KbMeta 
 import { useCatalog } from "../catalog";
 import { AskPanel, ReviewQueue } from "../components/kb/AskPanel";
 
-const VIEWS = ["Library", "Approvals", "Add item", "Ask", "Review queue", "Retrieval tester", "Change impact"] as const;
+const VIEWS = ["Documents", "Ask", "Advanced"] as const;
 type View = (typeof VIEWS)[number];
 
 /** Step 5: authorised, version-controlled knowledge base. Step 6: retrieval that grounds the agents. */
@@ -14,7 +14,7 @@ export default function KnowledgePage() {
   const [docs, setDocs] = useState<KbDoc[]>([]);
   const [impacts, setImpacts] = useState<KbImpact[]>([]);
   const [queue, setQueue] = useState(0);
-  const [view, setView] = useState<View>("Library");
+  const [view, setView] = useState<View>("Documents");
   const [openId, setOpenId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,23 +26,19 @@ export default function KnowledgePage() {
   useEffect(() => { api.kbMeta().then(setMeta).catch((e: Error) => setError(e.message)); load(); }, [load]);
 
   if (!meta) return <main className="page">{error ? <div className="alert error">{error}</div> : <span className="muted">Loading…</span>}</main>;
-  const drafts = docs.filter((d) => d.status === "draft");
-  const counts: Partial<Record<View, number>> = { Approvals: drafts.length, "Review queue": queue, "Change impact": impacts.length };
+  const counts: Partial<Record<View, number>> = { Advanced: queue + impacts.length };
 
   return (
     <main className="page">
       <header className="page-head">
-        <span className="eyebrow">Steps 5–6 · authorised knowledge, retrieval-grounded generation</span>
+        <span className="eyebrow">Grounding for the agents</span>
         <h1>Knowledge base</h1>
         <p className="muted">
-          Regulations, policies, standards, terminology, guidelines, templates and approved projects that ground the agents.
-          Every item records its source, jurisdiction, effective date, version and applicability. An item is searchable
-          only after its owner approves it, and only while it is in force.
+          Policies, regulations, glossaries and templates the agents rely on. Add a document and, once approved, the
+          agents use it. Remove it and they stop.
         </p>
       </header>
       {error && <div className="alert error">{error}</div>}
-
-      <CollectionSummary meta={meta} docs={docs} />
 
       <div className="tabs" role="tablist">
         {VIEWS.map((v) => (
@@ -52,13 +48,18 @@ export default function KnowledgePage() {
         ))}
       </div>
 
-      {view === "Library" && <Library meta={meta} docs={docs} onOpen={setOpenId} />}
-      {view === "Approvals" && <Library meta={meta} docs={drafts} onOpen={setOpenId} emptyText="No drafts waiting for approval." />}
-      {view === "Add item" && <SubmitForm meta={meta} onSubmitted={(id) => { load(); setOpenId(id); setView("Approvals"); }} />}
+      {view === "Documents" && <Documents meta={meta} docs={docs} onOpen={setOpenId} onChanged={load} />}
       {view === "Ask" && <AskPanel />}
-      {view === "Review queue" && <ReviewQueue onChanged={load} />}
-      {view === "Retrieval tester" && <Tester meta={meta} />}
-      {view === "Change impact" && <Impacts impacts={impacts} onResolved={load} />}
+      {view === "Advanced" && (
+        <div className="stack">
+          <CollectionSummary meta={meta} docs={docs} />
+          <h2>Review queue</h2>
+          <ReviewQueue onChanged={load} />
+          <h2>Removed documents still cited by projects</h2>
+          <Impacts impacts={impacts} onResolved={load} />
+          <Tester meta={meta} />
+        </div>
+      )}
 
       {openId !== null && <DocumentPanel id={openId} meta={meta} onClose={() => setOpenId(null)} onChanged={load} />}
     </main>
@@ -87,46 +88,74 @@ function CollectionSummary({ meta, docs }: { meta: KbMeta; docs: KbDoc[] }) {
 }
 
 const STATUS_CLASS: Record<string, string> = { active: "ok", draft: "sev-medium", superseded: "", withdrawn: "sev-high", rejected: "sev-high" };
+const STATUS_LABEL: Record<string, string> = { active: "in use", draft: "waiting for approval" };
 
-function Library({ meta, docs, onOpen, emptyText }: { meta: KbMeta; docs: KbDoc[]; onOpen: (id: number) => void; emptyText?: string }) {
-  const catalog = useCatalog();
+/** One list: search, add, approve and remove in place. */
+function Documents({ meta, docs, onOpen, onChanged }: { meta: KbMeta; docs: KbDoc[]; onOpen: (id: number) => void; onChanged: () => void }) {
+  const me = useMe().me;
+  const [q, setQ] = useState("");
   const [collection, setCollection] = useState("");
-  const [showOld, setShowOld] = useState(false);
-  const rows = docs.filter((d) => (!collection || d.collection === collection) && (showOld || !["superseded", "rejected", "withdrawn"].includes(d.status)));
+  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const colName = Object.fromEntries(meta.collections.map((c) => [c.id, c.name]));
+  const approverRoles = (collectionId: string) => meta.collections.find((c) => c.id === collectionId)?.approver_roles ?? [];
+  const roleFor = (collectionId: string) => approverRoles(collectionId).find((r) => me.roles.includes(r));
+
+  const needle = q.trim().toLowerCase();
+  const rows = docs
+    .filter((d) => d.status === "active" || d.status === "draft")
+    .filter((d) => (!collection || d.collection === collection) && (!needle || `${d.title} ${d.doc_key}`.toLowerCase().includes(needle)))
+    .sort((a, b) => (a.status === b.status ? a.title.localeCompare(b.title) : a.status === "draft" ? -1 : 1));
+
+  async function act(id: number, fn: () => Promise<unknown>) {
+    setBusy(id); setError(null);
+    try { await fn(); onChanged(); } catch (e) { setError((e as Error).message); } finally { setBusy(null); }
+  }
+  function approve(d: KbDoc) {
+    const role = roleFor(d.collection);
+    if (role) act(d.id, () => api.kbApprove(d.id, me.username, role));
+  }
+  function remove(d: KbDoc) {
+    if (!window.confirm(`Remove "${d.title}" from the knowledge base? The agents will stop using it.`)) return;
+    const reason = `Removed by ${me.username}`;
+    act(d.id, () => (d.status === "draft" ? api.kbReject(d.id, me.username, reason) : api.kbWithdraw(d.id, me.username, reason)));
+  }
+
   return (
     <section className="stack">
       <div className="row center-y">
-        <label className="row center-y" htmlFor="kb-filter">Collection
-          <select id="kb-filter" value={collection} onChange={(e) => setCollection(e.target.value)}>
-            <option value="">All collections</option>
-            {meta.collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
-        <label className="row center-y" style={{ flexDirection: "row" }}>
-          <input type="checkbox" checked={showOld} onChange={(e) => setShowOld(e.target.checked)} /> Show superseded, withdrawn and rejected
-        </label>
+        <input className="grow" aria-label="Search documents" placeholder="Search documents…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="Type" value={collection} onChange={(e) => setCollection(e.target.value)}>
+          <option value="">All types</option>
+          {meta.collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <button className="primary" onClick={() => setAdding(!adding)}>{adding ? "Cancel" : "+ Add document"}</button>
       </div>
-      {rows.length === 0 ? <div className="empty">{emptyText ?? "No items yet. Seed the knowledge base or add an item."}</div> : (
+      {adding && <QuickAdd meta={meta} onDone={() => { setAdding(false); onChanged(); }} />}
+      {error && <div className="alert error">{error}</div>}
+      {rows.length === 0 ? <div className="empty">No documents yet. Click “Add document” to upload one.</div> : (
         <div className="table-scroll">
           <table>
-            <thead><tr><th>Item</th><th>Source</th><th>Jurisdiction</th><th>Version</th><th>In force</th><th>Applies to</th><th>Status</th><th className="num">Passages</th></tr></thead>
+            <thead><tr><th>Document</th><th>Type</th><th>Status</th><th className="num">Actions</th></tr></thead>
             <tbody>
-              {rows.map((d) => (
-                <tr key={d.id} className="clickable" onClick={() => onOpen(d.id)}>
-                  <td><button className="link" style={{ padding: 0, textAlign: "left", whiteSpace: "normal" }}>{d.title}</button>
-                    <div className="muted small">{colName[d.collection]} · <code>{d.doc_key}</code></div></td>
-                  <td className="small">{d.source.issuer}<div><span className="tag">{d.source.license.replace("_", " ")}</span></div></td>
-                  <td className="small">{d.jurisdictions.join(", ")}</td>
-                  <td><code>{d.version}</code></td>
-                  <td className="small num">{d.effective_from}{d.effective_to ? ` → ${d.effective_to}` : " →"}
-                    {d.review_overdue && <div><span className="tag sev-medium">review overdue</span></div>}</td>
-                  <td className="small">{d.applicability.domains[0] === "all" ? <span className="muted">All domains</span>
-                    : d.applicability.domains.map((x) => <span key={x} className="chip">{catalog.domain[x]?.code ?? x}</span>)}</td>
-                  <td><span className={`tag ${STATUS_CLASS[d.status]}`}>{d.status}</span>{d.in_force && d.status !== "active" && <div className="small muted">still in force</div>}</td>
-                  <td className="num">{d.chunk_count}</td>
-                </tr>
-              ))}
+              {rows.map((d) => {
+                const role = roleFor(d.collection);
+                const canAct = Boolean(role) && busy !== d.id;
+                const why = role ? undefined : `Only ${approverRoles(d.collection).join(" / ")} can approve or remove this type`;
+                return (
+                  <tr key={d.id}>
+                    <td><button className="link" style={{ padding: 0, textAlign: "left", whiteSpace: "normal" }} onClick={() => onOpen(d.id)}>{d.title}</button>
+                      <div className="muted small">added by {d.submitted_by}</div></td>
+                    <td className="small">{colName[d.collection]}</td>
+                    <td><span className={`tag ${STATUS_CLASS[d.status]}`}>{STATUS_LABEL[d.status] ?? d.status}</span></td>
+                    <td className="num" style={{ whiteSpace: "nowrap" }}>
+                      {d.status === "draft" && <><button className="primary" disabled={!canAct} title={why} onClick={() => approve(d)}>Approve</button>{" "}</>}
+                      <button className="danger" disabled={!canAct} title={why} onClick={() => remove(d)}>Remove</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -135,202 +164,121 @@ function Library({ meta, docs, onOpen, emptyText }: { meta: KbMeta; docs: KbDoc[
   );
 }
 
-function DocumentPanel({ id, meta, onClose, onChanged }: { id: number; meta: KbMeta; onClose: () => void; onChanged: () => void }) {
+const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+
+/** Minimal add form: a file (or pasted text), a title, a type and a domain. Everything else gets a sensible default. */
+function QuickAdd({ meta, onDone }: { meta: KbMeta; onDone: () => void }) {
+  const me = useMe().me;
   const catalog = useCatalog();
-  const [detail, setDetail] = useState<KbDetail | null>(null);
-  const actor = useMe().me.username;
-  const [reason, setReason] = useState("");
+  const [title, setTitle] = useState("");
+  const [collection, setCollection] = useState("policy_control");
+  const [domain, setDomain] = useState("all");
+  const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState("");
+  const [pasting, setPasting] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showText, setShowText] = useState(false);
+  const role = meta.collections.find((c) => c.id === collection)?.approver_roles.find((r) => me.roles.includes(r));
 
-  const load = useCallback(() => api.kbDocument(id).then(setDetail).catch((e: Error) => setError(e.message)), [id]);
-  useEffect(() => { load(); }, [load]);
-  if (!detail) return null;
-  const d = detail.document;
-  const col = meta.collections.find((c) => c.id === d.collection)!;
-  const defaultRole = d.approved_role ?? col.approver_roles[0];
-
-  async function act(fn: () => Promise<unknown>) {
-    setBusy(true); setError(null);
-    try { await fn(); await load(); onChanged(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  function pickFile(f: File | null) {
+    setFile(f);
+    if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "));
   }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const url = sourceUrl.trim();
+    let issuer = "Internal";
+    if (url) {
+      try { issuer = new URL(url).hostname; } catch { setError("The source link is not a valid URL."); return; }
+    }
+    const metadata = {
+      // A unique key per upload: each document stands on its own, nothing is versioned or replaced.
+      doc_key: `${slug(title) || "doc"}-${Date.now().toString(36)}`, collection, title: title.trim(), issuer,
+      source_url: url || null, license: url ? "full_text" : "internal", jurisdictions: ["IN"], version: "1",
+      effective_from: new Date().toISOString().slice(0, 10), applicability: { domains: [domain] },
+    };
+    const fd = new FormData();
+    fd.append("metadata", JSON.stringify(metadata));
+    fd.append("submitted_by", me.username);
+    if (!pasting && file) fd.append("file", file); else fd.append("content", text);
+    setBusy(true);
+    try {
+      const { document } = await api.kbSubmit(fd);
+      if (role) await api.kbApprove(document.id, me.username, role);
+      onDone();
+    } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
+  }
+
+  return (
+    <form className="card stack tight" onSubmit={submit}>
+      <h2>Add a document</h2>
+      {error && <div className="alert error">{error}</div>}
+      <div className="segmented">
+        <button type="button" className={!pasting ? "active" : ""} onClick={() => setPasting(false)}>Upload file</button>
+        <button type="button" className={pasting ? "active" : ""} onClick={() => setPasting(true)}>Paste text</button>
+      </div>
+      {pasting ? <textarea rows={8} aria-label="Document text" value={text} onChange={(e) => setText(e.target.value)} />
+        : <input type="file" aria-label="Document file" accept=".pdf,.docx,.md,.txt,.yaml,.yml" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />}
+      <div className="row">
+        <label className="grow" htmlFor="qa-title">Title<input id="qa-title" value={title} onChange={(e) => setTitle(e.target.value)} required minLength={3} /></label>
+        <label className="grow" htmlFor="qa-col">Type
+          <select id="qa-col" value={collection} onChange={(e) => setCollection(e.target.value)}>
+            {meta.collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+        <label className="grow" htmlFor="qa-dom">Domain
+          <select id="qa-dom" value={domain} onChange={(e) => setDomain(e.target.value)}>
+            <option value="all">All domains</option>
+            {catalog.domains.filter((d) => d.status === "active").map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+      </div>
+      <label htmlFor="qa-url">Source link <span className="muted small">(optional; needed only for official regulations and standards)</span>
+        <input id="qa-url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://…" /></label>
+      <p className="note small">
+        {role ? "You can approve this type, so the agents can use it straight away."
+          : "It will wait for someone with the approver role before the agents use it."}
+      </p>
+      <div><button className="primary" type="submit" disabled={busy || title.trim().length < 3 || (pasting ? !text.trim() : !file)}>
+        {busy ? "Adding…" : role ? "Add and approve" : "Add"}</button></div>
+    </form>
+  );
+}
+
+function DocumentPanel({ id, meta, onClose }: { id: number; meta: KbMeta; onClose: () => void; onChanged: () => void }) {
+  const catalog = useCatalog();
+  const [detail, setDetail] = useState<KbDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { api.kbDocument(id).then(setDetail).catch((e: Error) => setError(e.message)); }, [id]);
+  if (!detail) return error ? <div className="alert error">{error}</div> : null;
+  const d = detail.document;
+  const col = meta.collections.find((c) => c.id === d.collection);
+  const domains = d.applicability.domains[0] === "all" ? "All domains"
+    : d.applicability.domains.map((x) => catalog.domain[x]?.name ?? x).join(", ");
 
   return (
     <div className="panel-backdrop" onClick={onClose}>
       <aside className="panel" role="dialog" aria-label={d.title} onClick={(e) => e.stopPropagation()}>
         <div className="section-head">
-          <span className="eyebrow">{col.name}</span>
+          <span className="eyebrow">{col?.name}</span>
           <button className="link" onClick={onClose}>Close</button>
         </div>
         <h2>{d.title}</h2>
-        <div className="chips"><span className={`tag ${STATUS_CLASS[d.status]}`}>{d.status}</span>{d.in_force && <span className="tag ok">in force</span>}
-          <span className="tag">v{d.version}</span><code className="small">{d.doc_key}</code></div>
-        {error && <div className="alert error">{error}</div>}
+        <div className="chips"><span className={`tag ${STATUS_CLASS[d.status]}`}>{STATUS_LABEL[d.status] ?? d.status}</span></div>
 
         <dl className="kv">
-          <dt>Source</dt><dd>{d.source.issuer}{d.source.url && <> · <a href={d.source.url} target="_blank" rel="noreferrer">link</a></>}
-            <div className="small muted">{d.source.license.replace("_", " ")} · sha256 <code>{d.source.sha256.slice(0, 12)}…</code></div></dd>
+          <dt>Source</dt><dd>{d.source.issuer}{d.source.url && <> · <a href={d.source.url} target="_blank" rel="noreferrer">link</a></>}</dd>
           <dt>Jurisdiction</dt><dd>{d.jurisdictions.map((j) => meta.jurisdictions[j] ?? j).join(", ")}</dd>
-          <dt>Effective</dt><dd className="num">{d.effective_from} → {d.effective_to ?? "open"}{d.review_due && <span className="muted"> · review by {d.review_due}</span>}</dd>
-          <dt>Version</dt><dd>{d.version} <span className="muted small">({detail.versions.length} version{detail.versions.length > 1 ? "s" : ""})</span></dd>
-          <dt>Applicability</dt><dd>
-            {d.applicability.domains[0] === "all" ? "All domains" : d.applicability.domains.map((x) => catalog.domain[x]?.name ?? x).join(", ")}
-            {d.applicability.entity_types?.length ? <div className="small muted">Entities: {d.applicability.entity_types.join(", ")}</div> : null}
-            {d.applicability.roles?.length ? <div className="small muted">Roles: {d.applicability.roles.map((r) => catalog.role[r]?.name ?? r).join(", ")}</div> : null}
-          </dd>
-          <dt>Authorisation</dt><dd className="small">Submitted by {d.submitted_by}{d.approved_by && <> · approved by {d.approved_by} as {catalog.role[d.approved_role ?? ""]?.name ?? d.approved_role}</>}</dd>
-          <dt>Indexing</dt><dd className="small">{d.section_count} sections · {d.chunk_count} passages{d.embedding_model && <> · <code>{d.embedding_model}</code></>}
-            {Object.keys(d.redactions).length > 0 && <> · masked {Object.entries(d.redactions).map(([k, v]) => `${k}×${v}`).join(", ")}</>}</dd>
-          {d.notes && <><dt>Notes</dt><dd className="small">{d.notes}</dd></>}
+          <dt>Effective from</dt><dd className="num">{d.effective_from}{d.effective_to && <> until {d.effective_to}</>}</dd>
+          <dt>Domain</dt><dd>{domains}</dd>
         </dl>
 
         <section className="stack tight">
-          <h3>Changes {detail.diff_vs ? `since v${detail.diff_vs}` : "(first version)"}</h3>
-          <div className="chips small">
-            <span className="chip ok">+{detail.diff.added.length} added</span>
-            <span className="chip sev-medium">{detail.diff.changed.length} changed</span>
-            <span className="chip sev-high">−{detail.diff.removed.length} removed</span>
-            <span className="chip">{detail.diff.unchanged} unchanged</span>
-          </div>
-          {detail.diff_vs && (detail.diff.changed.length + detail.diff.added.length + detail.diff.removed.length > 0) && (
-            <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem" }}>
-              {detail.diff.changed.map((s) => <li key={s}><span className="warn-text">changed</span> {s}</li>)}
-              {detail.diff.added.map((s) => <li key={s}><span className="ok-text">added</span> {s}</li>)}
-              {detail.diff.removed.map((s) => <li key={s}><span className="danger-text">removed</span> {s}</li>)}
-            </ul>
-          )}
+          <h3>Content</h3>
+          <pre className="masked" style={{ whiteSpace: "pre-wrap", maxHeight: "60vh", overflow: "auto" }}>{detail.content}</pre>
         </section>
-
-        {detail.versions.length > 1 && (
-          <section className="stack tight">
-            <h3>Version history</h3>
-            <ol className="versions">
-              {detail.versions.map((v) => (
-                <li key={v.id} className={v.id === d.id ? "current" : ""}>
-                  <code>v{v.version}</code> <span className={`tag ${STATUS_CLASS[v.status]}`}>{v.status}</span>
-                  <span className="small muted num"> {v.effective_from} → {v.effective_to ?? "open"}</span>
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-
-        <section className="stack tight">
-          <div className="section-head"><h3>Structure</h3><button className="link" onClick={() => setShowText(!showText)}>{showText ? "Hide text" : "Show text"}</button></div>
-          {showText ? <pre className="masked">{detail.content}</pre> : (
-            <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem", maxHeight: 200, overflow: "auto" }}>
-              {detail.sections.map((s, i) => <li key={i}>{s.path.join(" › ") || "(preamble)"} <span className="muted">· {s.passages}</span></li>)}
-            </ul>
-          )}
-        </section>
-
-        {(d.status === "draft" || d.status === "active") && (
-          <section className="card stack tight">
-            <h3>{d.status === "draft" ? "Approve this version" : "Withdraw this version"}</h3>
-            {d.status === "draft" && <p className="note">Approval by {col.approver_roles.map((r) => catalog.role[r]?.name).join(" or ")}. Approving supersedes the current version from v{d.version}'s effective date.</p>}
-            <div className="row">
-              
-              {d.status === "draft" && <label className="grow" htmlFor="kb-role">As role
-                <select id="kb-role" defaultValue={defaultRole}>{col.approver_roles.map((r) => <option key={r} value={r}>{catalog.role[r]?.name}</option>)}</select></label>}
-            </div>
-            <label htmlFor="kb-reason">{d.status === "draft" ? "Reason (required to reject)" : "Reason (required)"}<input id="kb-reason" value={reason} onChange={(e) => setReason(e.target.value)} /></label>
-            <div className="row">
-              {d.status === "draft" ? <>
-                <button className="primary" disabled={busy || !actor.trim()} onClick={() => act(() =>
-                  api.kbApprove(d.id, actor.trim(), (document.getElementById("kb-role") as HTMLSelectElement).value))}>Approve</button>
-                <button disabled={busy || !actor.trim() || !reason.trim()} onClick={() => act(() => api.kbReject(d.id, actor.trim(), reason))}>Reject</button>
-              </> : <button className="danger" disabled={busy || !actor.trim() || !reason.trim()} onClick={() => act(() => api.kbWithdraw(d.id, actor.trim(), reason))}>Withdraw</button>}
-            </div>
-          </section>
-        )}
       </aside>
     </div>
-  );
-}
-
-function SubmitForm({ meta, onSubmitted }: { meta: KbMeta; onSubmitted: (id: number) => void }) {
-  const catalog = useCatalog();
-  const [f, setF] = useState({ doc_key: "", collection: "regulation", title: "", issuer: "", source_url: "", license: "full_text",
-    version: "", effective_from: "", review_due: "", notes: "", submitted_by: useMe().me.username });
-  const [jur, setJur] = useState<string[]>(["IN"]);
-  const [domains, setDomains] = useState<string[]>(["all"]);
-  const [mode, setMode] = useState<"text" | "file">("file");
-  const [content, setContent] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
-  const toggle = (list: string[], v: string, on: boolean) => (on ? [...list.filter((x) => x !== "all"), v] : list.filter((x) => x !== v));
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    const metadata = {
-      doc_key: f.doc_key.trim(), collection: f.collection, title: f.title.trim(), issuer: f.issuer.trim(),
-      source_url: f.source_url.trim() || null, license: f.license, jurisdictions: jur, version: f.version.trim(),
-      effective_from: f.effective_from, review_due: f.review_due || null, notes: f.notes || null,
-      applicability: { domains: domains.length ? domains : ["all"] },
-    };
-    const fd = new FormData();
-    fd.append("metadata", JSON.stringify(metadata));
-    fd.append("submitted_by", f.submitted_by.trim());
-    if (mode === "file" && file) fd.append("file", file); else fd.append("content", content);
-    setBusy(true); setError(null);
-    try { onSubmitted((await api.kbSubmit(fd)).document.id); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
-  }
-
-  const col = meta.collections.find((c) => c.id === f.collection)!;
-  return (
-    <form className="card" onSubmit={submit}>
-      <h2>Add an item or a new version</h2>
-      <p className="note">Use the same document key as an existing item to submit a new version; the approver sees a section-by-section diff.
-        Submissions are drafts until {col.approver_roles.map((r) => catalog.role[r]?.name).join(" or ")} approves.</p>
-      {error && <div className="alert error">{error}</div>}
-      <div className="row">
-        <label className="grow" htmlFor="f-col">Collection
-          <select id="f-col" value={f.collection} onChange={set("collection")}>{meta.collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-        <label className="grow" htmlFor="f-key">Document key<input id="f-key" value={f.doc_key} onChange={set("doc_key")} placeholder="rbi-kyc-master-direction" required pattern="[a-z0-9][a-z0-9\-]{2,119}" /></label>
-      </div>
-      <label htmlFor="f-title">Title<input id="f-title" value={f.title} onChange={set("title")} required /></label>
-      <fieldset><legend>Source</legend>
-        <div className="row">
-          <label className="grow" htmlFor="f-issuer">Issuer<input id="f-issuer" value={f.issuer} onChange={set("issuer")} placeholder="Reserve Bank of India" required /></label>
-          <label className="grow" htmlFor="f-url">Source URL or citation<input id="f-url" value={f.source_url} onChange={set("source_url")} placeholder="https://…" /></label>
-          <label htmlFor="f-lic">Licence<select id="f-lic" value={f.license} onChange={set("license")}>{meta.licenses.map((l) => <option key={l} value={l}>{l.replace("_", " ")}</option>)}</select></label>
-        </div>
-      </fieldset>
-      <fieldset><legend>Jurisdiction</legend>
-        <div className="checks">{Object.entries(meta.jurisdictions).map(([k, v]) => (
-          <label key={k}><input type="checkbox" checked={jur.includes(k)} onChange={(e) => setJur(e.target.checked ? [...jur, k] : jur.filter((x) => x !== k))} />{v}</label>))}</div>
-      </fieldset>
-      <fieldset><legend>Version and effective dates</legend>
-        <div className="row">
-          <label className="grow" htmlFor="f-ver">Version<input id="f-ver" value={f.version} onChange={set("version")} placeholder="as printed on the document" required /></label>
-          <label className="grow" htmlFor="f-from">In force from<input id="f-from" type="date" value={f.effective_from} onChange={set("effective_from")} required /></label>
-          <label className="grow" htmlFor="f-review">Review by<input id="f-review" type="date" value={f.review_due} onChange={set("review_due")} /></label>
-        </div>
-      </fieldset>
-      <fieldset><legend>Applicability (domains)</legend>
-        <div className="checks">
-          <label><input type="checkbox" checked={domains.includes("all")} onChange={(e) => setDomains(e.target.checked ? ["all"] : [])} />All domains</label>
-          {catalog.domains.map((d) => <label key={d.id}><input type="checkbox" checked={domains.includes(d.id)} onChange={(e) => setDomains(toggle(domains, d.id, e.target.checked))} />{d.name}</label>)}
-        </div>
-      </fieldset>
-      <div className="segmented">
-        <button type="button" className={mode === "file" ? "active" : ""} onClick={() => setMode("file")}>Upload file</button>
-        <button type="button" className={mode === "text" ? "active" : ""} onClick={() => setMode("text")}>Paste text</button>
-      </div>
-      {mode === "file" ? <input id="f-file" type="file" accept=".pdf,.docx,.md,.txt,.yaml,.yml" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        : <textarea id="f-text" rows={8} value={content} onChange={(e) => setContent(e.target.value)} />}
-      <div className="row">
-        
-        <label className="grow" htmlFor="f-notes">Notes<input id="f-notes" value={f.notes} onChange={set("notes")} /></label>
-      </div>
-      <p className="note">Documents are split at headings and numbered clauses into parent sections and searchable passages,
-        each prefixed with its location, then embedded. Unchanged passages reuse cached embeddings.</p>
-      <div><button className="primary" type="submit" disabled={busy || jur.length === 0 || (mode === "file" ? !file : !content.trim())}>
-        {busy ? "Chunking and embedding…" : "Submit draft"}</button></div>
-    </form>
   );
 }
 

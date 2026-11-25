@@ -1,6 +1,15 @@
-"""Human-approval agent: decides WHO must approve, pauses the graph (interrupt) and applies human decisions.
+"""Human approval gates, run by the coordinator: decide WHO must approve, pause the graph (interrupt) and apply
+human decisions.
 
-Gates inside the analysis graph (step 16, see guide/human_in_the_loop.md):
+Two gates in the analysis graph (step 16, see guide/human_in_the_loop.md), each with two steps:
+  requirements_gate   "Approve requirements"
+    1. clarification  only when there are blocking questions (once per pass, at most max_clarification_rounds)
+    2. baseline       sign-off by every required role
+  plan_gate           "Approve plan"
+    1. sdlc           the SDLC model
+    2. workflow       the project workflow built for that model
+
+The steps:
   clarification_gate  questions routed to stakeholder roles: answer (accept), leave unanswered (reject), or ask for the
                       analysis to be regenerated with feedback
   baseline_approval   requirement baseline. Loops until every required role has approved. Requirements that are
@@ -46,11 +55,12 @@ def clarification_gate(state: ProjectState) -> ProjectState:
     responder = response.get("responder", "analyst")
     if response.get("decision") == "regenerate":  # the questions themselves are not useful: redo the analysis
         record(state["project_id"], responder, "clarification_regenerate", {"round": round_no, "feedback": response.get("feedback", "")})
-        return {"clarified": True, "clarification_round": round_no, "feedback": response.get("feedback", "")}
+        return {"clarified": True, "clarification_round": round_no, "feedback": response.get("feedback", ""),
+                "questions_iteration": state.get("iteration")}
     answered = [a for a in response.get("answers", []) if a.get("answer", "").strip()]
     if response.get("skip") or not answered:
         record(state["project_id"], responder, "clarification_skipped", {"round": round_no})
-        return {"clarified": False, "clarification_round": round_no}
+        return {"clarified": False, "clarification_round": round_no, "questions_iteration": state.get("iteration")}
     grouped: dict[str, list[dict]] = defaultdict(list)
     for a in answered:
         grouped[a["target_role"]].append({"category": "clarification", "question": a["question"], "answer": a["answer"]})
@@ -59,7 +69,7 @@ def clarification_gate(state: ProjectState) -> ProjectState:
                questionnaire_to_text(role_name(role), answers), role, actor=responder)
     record(state["project_id"], responder, "clarifications_answered",
            {"round": round_no, "answers": len(answered), "unanswered": len(questions) - len(answered), "roles": list(grouped)})
-    return {"clarified": True, "clarification_round": round_no}
+    return {"clarified": True, "clarification_round": round_no, "questions_iteration": state.get("iteration")}
 
 
 # ---------- Baseline approval ----------
@@ -248,3 +258,25 @@ def workflow_approval(state: ProjectState) -> ProjectState:
                 "controls_reinstated": [c["control"] for c in workflow["controls_added_by_rules"]
                                         if c not in state["sdlc_workflow"].get("controls_added_by_rules", [])]})
     return update
+
+
+# ---------- The two coordinator gates ----------
+
+def asks_questions(state: ProjectState) -> bool:
+    """Blocking questions are put to stakeholders once per analysis pass, for at most max_clarification_rounds."""
+    blocking = any(q["severity"] == "blocking" for q in state.get("clarifications", []))
+    return blocking and state.get("clarification_round", 0) < get_settings().max_clarification_rounds         and state.get("questions_iteration") != state.get("iteration")
+
+
+def requirements_gate(state: ProjectState) -> ProjectState:
+    """Approve requirements: answer the blocking questions first (if any), then sign off the baseline."""
+    if asks_questions(state):
+        return clarification_gate(state) | {"gate_step": "questions"}
+    return baseline_approval(state) | {"gate_step": "signoff"}
+
+
+def plan_gate(state: ProjectState) -> ProjectState:
+    """Approve plan: the SDLC model first, then the workflow built for it."""
+    if pending_sdlc_approvers(state):
+        return sdlc_approval(state)
+    return workflow_approval(state)

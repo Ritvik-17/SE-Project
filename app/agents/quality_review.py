@@ -41,7 +41,7 @@ def quality_review(state: ProjectState) -> ProjectState:
         result = llm.structured(QualityReviewResult, PROMPT.format(
             domain=domain_name(state["domain"]), requirements=_listing(reqs[start:start + 25])))
         findings += [f.model_dump() for f in result.findings if f.req_id in ids]  # drop hallucinated IDs
-    record(state["project_id"], "quality_review_agent", "reviewed_quality",
+    record(state["project_id"], "review_agent", "reviewed_quality",
            {check: sum(f["check"] == check for f in findings)
             for check in ("ambiguity", "incompleteness", "infeasibility", "lack_of_testability")})
     return {"quality_findings": findings}

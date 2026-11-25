@@ -2,23 +2,81 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import Diagram from "../components/Diagram";
 
-const AGENTS: [string, string, string][] = [
-  ["Coordinator", "intake · consolidate · all routing", "Loads masked sources, fans out extraction per chunk, merges and numbers requirements, decides every next step with deterministic rules."],
-  ["Stakeholder interaction", "separate interview graph", "Adaptive interview over the 13 step-7 topics relevant to the role; assesses every answer and follows up on incomplete, vague or inconsistent ones; saves transcript, coverage and open points as a source."],
-  ["Requirement extraction", "extraction (parallel)", "Extracts atomic, testable requirements in the step-8 structure: statement, categories, priority, justification, assumptions, dependencies, acceptance criteria and a verbatim source quote."],
-  ["Classification", "classification", "Makes FR/NFR type, 13-category multi-label tags (never empty) and MoSCoW priority consistent across sources, and links dependencies between requirements."],
-  ["Clarification", "clarification (after validation)", "Receives every requirement that failed a quality check and asks a question for each, plus domain gaps, routed to the role best placed to answer. Failures of blocking checks pause the graph at the clarification gate."],
-  ["Quality review", "quality_review ∥", "Semantic step-10 checks: ambiguity, incompleteness, infeasibility and lack of testability, each with a concrete fix."],
-  ["Conflict detection", "conflict_detection ∥", "Finds contradictions, duplicates and overlaps between requirements and stakeholders."],
-  ["Compliance", "compliance ∥", "Proposes, never decides: maps requirements to regulations with jurisdiction, required controls, KB evidence, retention/reporting obligations and mandatory checkpoints; lists gaps. High-impact or weakly evidenced mappings need compliance/legal approval."],
-  ["Security & privacy", "security_privacy ∥", "Finds missing controls, weak security requirements and privacy risks, and proposes requirements."],
-  ["Risk analysis", "risk_analysis ∥", "Builds the risk register: business, technical, compliance, security and operational risks, with likelihood × impact."],
-  ["Grounding", "grounding ∥", "Step 6 for every requirement: retrieves the policies and regulations its categories call for, judges whether it is supported or contradicts them, attaches verified citations and a combined confidence, and escalates the rest to human review."],
-  ["Validation", "validation (join)", "Runs the ten step-10 quality checks (missing source verified against the source text), completes each requirement's regulations and risk level, scores quality and returns failing requirements to the clarification agent."],
-  ["Human approval", "clarification_gate · baseline_approval · sdlc_approval · workflow_approval", "Decides who must approve and pauses the graph. Requirements that are high-risk security, architecture-critical, in stakeholder conflict or escalated must be accepted, modified or rejected by the role that owns them; compliance decides every regulatory interpretation. After completion, change requests and production-readiness reviews keep humans in control."],
-  ["SDLC selection", "sdlc_selection", "Derives all 13 step-13 decision factors (system size and stakeholder availability measured from project data). It answers the course's 19 SDLC-selection questions (approvers can correct them), then TOPSIS, weighted fit and 30 sourced rules (problem statement, course slides, research) rank 10 models by % suitability; the LLM explains the ranking."],
-  ["Workflow", "sdlc_workflow", "Customises the approved model: fills each canonical phase with project-specific activities, roles, deliverables, security, testing, compliance checkpoints, approval gates, entry/exit criteria and traceability; schedules the timeline from the model's structure (sequential, V-paired, sprints, cycles, continuous pipeline) and enforces mandatory controls in the right phase."],
-  ["Documentation", "persist_baseline · documentation", "Saves the baseline and generates the eleven step-12 artefacts, from the SRS to the assumptions and dependency register; every row links to its stakeholder statement and supporting document."],
+interface AgentRow { name: string; ai: string; nodes: string; does: string[] }
+
+const AGENTS: AgentRow[] = [
+  {
+    name: "Coordinator", ai: "No", nodes: "intake · consolidate · assess · requirements_gate · plan_gate",
+    does: [
+      "Loads the masked sources, splits them into chunks and sends one chunk to each extraction run.",
+      "Merges the extraction results, removes exact repeats and records where each requirement came from.",
+      "Scores the run: combines the review and compliance & security findings, runs the ten deterministic quality checks and calculates the quality scores.",
+      "Makes sure every requirement that still fails a check has a stakeholder question.",
+      "Runs both human approval gates and decides every next step with fixed rules, so runs are reproducible.",
+    ],
+  },
+  {
+    name: "Extraction", ai: "Yes", nodes: "extraction (one per chunk, in parallel)",
+    does: [
+      "Reads one chunk of one source and pulls out atomic, testable requirements (\"The system shall …\").",
+      "Records a verbatim source quote, acceptance criteria, justification, assumptions, dependencies and a confidence score for each.",
+      "Instruction-like text in a source (prompt injection) is removed before the model sees it.",
+    ],
+  },
+  {
+    name: "Classification", ai: "Yes", nodes: "classification",
+    does: [
+      "Decides whether each requirement is functional (something the system does) or non-functional (a quality, constraint or obligation).",
+      "Assigns one or more of the 13 categories and a MoSCoW priority, consistently across all sources.",
+      "Links dependencies between requirements and numbers them FR-… / NFR-… to match their final type.",
+    ],
+  },
+  {
+    name: "Review", ai: "Yes", nodes: "review (quality · conflicts · risk in parallel, then questions)",
+    does: [
+      "Quality: vague, incomplete, infeasible or untestable requirements, each with a concrete fix.",
+      "Conflicts: contradictions, duplicates and overlaps between requirements and between stakeholders.",
+      "Risk: a risk register with likelihood × impact, mitigation and linked requirements.",
+      "Questions: drafts a question for each problem, routed to the stakeholder best placed to answer, marked blocking or not.",
+    ],
+  },
+  {
+    name: "Compliance & security", ai: "Yes", nodes: "compliance_security (three steps in parallel)",
+    does: [
+      "Compliance: maps requirements to regulations and obligations from the knowledge base and lists gaps. It proposes; compliance & legal decide.",
+      "Security & privacy: missing controls, weak security requirements and privacy risks, with proposed requirements.",
+      "Evidence: checks each requirement against approved policy, attaches citations and escalates weakly supported or contradicted ones to people.",
+    ],
+  },
+  {
+    name: "Planning", ai: "Yes (with a rules engine)", nodes: "planning",
+    does: [
+      "SDLC model: the rules engine and TOPSIS rank 10 models from 13 project factors and the course's selection questions; the model explains the ranking.",
+      "Workflow: customises the chosen model's phases, roles, deliverables, compliance checkpoints and schedule, and enforces mandatory controls.",
+      "If approvers pick a different model, or ask for a new workflow, only the workflow is rebuilt.",
+    ],
+  },
+  {
+    name: "Documentation", ai: "Yes", nodes: "freeze_baseline · documentation",
+    does: [
+      "Freezes the approved requirement baseline; after that it only changes through a change request.",
+      "Generates the final documents (SRS, user stories, use cases, traceability matrix, compliance mapping and more), each linked back to its stakeholder statement.",
+    ],
+  },
+];
+
+const STEPS: [string, string][] = [
+  ["Coordinator", "Loads the project's masked inputs and splits them into chunks."],
+  ["Extraction ×N", "All chunks are read in parallel; each returns candidate requirements with a source quote."],
+  ["Coordinator", "Merges the results and records where each requirement came from."],
+  ["Classification", "Labels every requirement functional or non-functional, with categories and priority, and numbers them."],
+  ["Review ∥ Compliance & security", "Run at the same time: quality, conflicts, risk and questions; regulations, security and evidence."],
+  ["Coordinator", "Combines both reports, runs the quality checks, scores the run and finalises the questions."],
+  ["⏸ Approve requirements", "Step 1: answer any blocking questions (answers re-run the analysis). Step 2: every required role signs off the baseline."],
+  ["Documentation", "Freezes the approved baseline."],
+  ["Planning", "Recommends the SDLC model and builds the project workflow for it."],
+  ["⏸ Approve plan", "Step 1: approve the SDLC model. Step 2: approve the workflow."],
+  ["Documentation", "Generates the final documents. Done."],
 ];
 
 export default function AgentsPage() {
@@ -30,39 +88,66 @@ export default function AgentsPage() {
   return (
     <main className="page">
       <header className="page-head">
-      <span className="eyebrow">Step 4 · multi-agent architecture</span>
-      <h1>Agent graph</h1>
-      <p className="muted">
-        Rendered live from the compiled LangGraph objects. Solid arrows are fixed edges; dotted arrows are routing decisions made by the coordinator.
-        The six analysis agents run in parallel and join at validation.
-      </p>
+        <span className="eyebrow">Step 4 · multi-agent architecture</span>
+        <h1>Agent graph</h1>
+        <p className="muted">
+          Seven agents analyse the inputs, with two points where people must approve before the flow continues.
+          The diagram is drawn live from the compiled LangGraph: solid arrows are fixed steps, dotted arrows are routing
+          decisions made by the coordinator.
+        </p>
       </header>
+
       <section className="card">
         <h2>Requirements-analysis graph</h2>
         {graphs ? <Diagram code={graphs.analysis} /> : <p className="muted">Loading…</p>}
       </section>
+
+      <section className="section">
+        <h2>The flow, start to end</h2>
+        <ol className="stack tight">
+          {STEPS.map(([who, what], i) => (
+            <li key={i}><strong>{who}</strong> · <span className="muted">{what}</span></li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="section">
+        <h2>The seven agents</h2>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th>Agent</th><th>Uses AI</th><th>Graph node(s)</th><th>What it does</th></tr></thead>
+            <tbody>{AGENTS.map((a) => (
+              <tr key={a.name}>
+                <td><strong>{a.name}</strong></td>
+                <td className="small">{a.ai}</td>
+                <td><code className="small">{a.nodes}</code></td>
+                <td className="small"><ul style={{ margin: 0, paddingLeft: "1.1rem" }}>{a.does.map((d) => <li key={d}>{d}</li>)}</ul></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </section>
+
       <div className="two-col">
         <section className="card">
-          <h2>Interview graph</h2>
-          {graphs && <Diagram code={graphs.interview} />}
-        </section>
-        <section className="card">
-          <h2>Human gates</h2>
+          <h2>Human approval gates</h2>
           <ul className="small">
-            <li><strong>Clarification:</strong> blocking questions are routed to stakeholder roles. Answers become sources and the agents re-run (at most 2 rounds).</li>
-            <li><strong>Baseline approval:</strong> the product owner always approves. Compliance approves if there are regulatory items or legal-review flags, infosec if there are high-severity security issues, and the architect if there are must-have integration or performance requirements.</li>
-            <li><strong>SDLC approval:</strong> product owner, architect, infosec and compliance.</li>
-            <li>Every gate supports approve, regenerate with feedback, and per-item edits. All decisions are audited.</li>
+            <li><strong>Approve requirements.</strong> If there are blocking questions, they go to the right stakeholder roles first;
+              answers become new inputs and the agents run again (at most two rounds). Then the baseline is signed off: the product
+              owner always, compliance if there are regulatory items or legal-review flags, infosec if there are high-severity
+              security issues, and the architect if there are must-have integration or performance requirements. Requirements
+              owned by a role must be accepted, modified or rejected by that role.</li>
+            <li><strong>Approve plan.</strong> The SDLC model is approved by the project manager, architect, infosec and compliance;
+              choosing a different model rebuilds the workflow for it. Then the workflow is approved.</li>
+            <li>Every step supports approve, regenerate with feedback, and per-item edits. All decisions are audited.</li>
           </ul>
         </section>
+        <section className="card">
+          <h2>Interview graph</h2>
+          <p className="small muted">The adaptive stakeholder interview, kept separate from the analysis flow. Its transcript is saved as an input source.</p>
+          {graphs && <Diagram code={graphs.interview} />}
+        </section>
       </div>
-      <section className="section">
-        <h2>Agents</h2>
-        <table>
-          <thead><tr><th>Agent</th><th>Graph node(s)</th><th>Responsibility</th></tr></thead>
-          <tbody>{AGENTS.map(([a, n, d]) => <tr key={a}><td><strong>{a}</strong></td><td><code>{n}</code></td><td>{d}</td></tr>)}</tbody>
-        </table>
-      </section>
     </main>
   );
 }

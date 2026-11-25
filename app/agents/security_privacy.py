@@ -48,6 +48,6 @@ def security_privacy(state: ProjectState) -> ProjectState:
         hit = refs.get(d.get("evidence_ref") or "")
         d["evidence_ref"], d["citation"] = (hit.ref, hit.citation) if hit else ("none", None)
         findings.append(d)
-    record(state["project_id"], "security_privacy_agent", "assessed_security",
+    record(state["project_id"], "compliance_security_agent", "assessed_security",
            {"evidence_passages": len(hits)} | {sev: sum(f["severity"] == sev for f in findings) for sev in ("high", "medium", "low")})
     return {"security_findings": findings}

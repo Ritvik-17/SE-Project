@@ -153,5 +153,5 @@ def decide(session: Session, graph, review: ApprovalRequest, reviewer: str, role
     elif all(latest.get(r) in ("go", "conditional") for r in review.required_roles):
         review.status = "approved_with_conditions" if "conditional" in latest.values() else "approved"
         review.closed_at = datetime.now(timezone.utc)
-        record(review.project_id, "human_approval_agent", "production_readiness_decided",
+        record(review.project_id, "coordinator_agent", "production_readiness_decided",
                {"review": review.id, "status": review.status})

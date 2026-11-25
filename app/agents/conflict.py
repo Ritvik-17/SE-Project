@@ -37,6 +37,6 @@ def conflict_detection(state: ProjectState) -> ProjectState:
             valid = [i for i in c.req_ids if i in ids]  # drop hallucinated IDs
             if len(valid) >= 2 and tuple(sorted(valid)) not in exact:
                 found.append(c.model_dump() | {"req_ids": valid})
-    record(state["project_id"], "conflict_detection_agent", "conflicts_detected",
+    record(state["project_id"], "review_agent", "conflicts_detected",
            {kind: sum(c["kind"] == kind for c in found) for kind in ("conflict", "duplicate", "overlap")})
     return {"conflicts": found}

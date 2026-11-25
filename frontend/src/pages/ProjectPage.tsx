@@ -9,8 +9,13 @@ import InterviewPanel from "../components/InterviewPanel";
 import RecordsPanel from "../components/RecordsPanel";
 import SourcesPanel from "../components/SourcesPanel";
 
-const TABS = ["Inputs", "Interviews", "Analysis & approvals", "Governance", "Evaluation & records", "Audit trail"] as const;
-type Tab = (typeof TABS)[number];
+/** Stakeholder interviews (structured questionnaire + adaptive AI interview) are built but hidden for now.
+ *  Set to true to show the Interviews tab again. */
+const SHOW_INTERVIEWS = false;
+
+const ALL_TABS = ["Inputs", "Interviews", "Analysis & approvals", "Governance", "Evaluation & records", "Audit trail"] as const;
+type Tab = (typeof ALL_TABS)[number];
+const TABS = ALL_TABS.filter((t) => SHOW_INTERVIEWS || t !== "Interviews");
 
 export default function ProjectPage() {
   const pid = Number(useParams().id);
@@ -45,14 +50,8 @@ export default function ProjectPage() {
       <header className="page-head">
         <span className="eyebrow"><Link to="/">Projects</Link> / {domain.code}</span>
         <h1>{project.name}</h1>
-        <p className="muted">{domain.name} · jurisdiction {project.jurisdiction} · {sources.length} input source{sources.length === 1 ? "" : "s"}</p>
+        <p className="muted">{domain.name} · {sources.length} input source{sources.length === 1 ? "" : "s"}</p>
       </header>
-      {project.deployment_stage === "advisory" && (
-        <div className="alert warn">
-          <strong>Advisory mode.</strong> The assistant is running alongside the business analysts. Its documents are marked advisory and are
-          not official; compare them with the analysts' work under <em>Evaluation &amp; records</em>. Decisions remain with the approvers.
-        </div>
-      )}
       {impacts.map((i) => (
         <div key={i.id} className="alert warn">
           Regulatory change: this project cites <code>{i.doc_key}</code> v{i.old_version}, which was {i.change}
@@ -69,7 +68,7 @@ export default function ProjectPage() {
       </div>
 
       {tab === "Inputs" && <SourcesPanel project={project} sources={sources} onChange={refreshSources} />}
-      {tab === "Interviews" && (
+      {SHOW_INTERVIEWS && tab === "Interviews" && (
         <InterviewPanel project={project} onSubmitted={() => { refreshSources(); setTab("Inputs"); }} onSourcesChanged={refreshSources} />
       )}
       {tab === "Analysis & approvals" && <AnalysisPanel project={project} sourceCount={sources.length} />}

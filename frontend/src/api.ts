@@ -111,9 +111,19 @@ export interface SdlcGate {
 }
 export type Gate = ClarificationGate | BaselineGate | SdlcGate | WorkflowGate;
 
+export interface SdlcCatalog {
+  version: string; scoring: Record<string, number>;
+  factors: { id: string; name: string; base_weight: number }[];
+  characteristics: { id: string; name: string; questions: string[] }[];
+  models: { id: string; name: string; description: string; source?: string; structure: string; cadence: string;
+    phases: { name: string; kinds: string[]; recurrence: string }[] }[];
+  rules: { id: string; source: string; reason: string; effects: Record<string, number> }[];
+  mandatory_controls: { control: string; phase: string; when: string }[];
+}
+
 export interface RunStatus {
   project_id: number;
-  status: "awaiting_input" | "completed" | "running" | "not_started";
+  status: "awaiting_input" | "completed" | "running" | "not_started" | "outdated";
   gate: Gate["gate"] | null;
   next: string[];
   pending: Gate | null;
@@ -361,7 +371,7 @@ export const api = {
 
   projects: () => request<Project[]>("/projects"),
   project: (id: number) => request<Project>(`/projects/${id}`),
-  createProject: (name: string, domain: string, jurisdiction: string) =>
+  createProject: (name: string, domain: string, jurisdiction = "IN") =>
     request<Project>("/projects", json("POST", { name, domain, jurisdiction })),
 
   sources: (pid: number) => request<Source[]>(`/projects/${pid}/sources`),
@@ -376,6 +386,7 @@ export const api = {
   replyInterview: (pid: number, sid: string, answer: string, finish = false) =>
     request<InterviewSession>(`/projects/${pid}/interview-sessions/${sid}/reply`, json("POST", { answer, finish })),
 
+  sdlcCatalog: () => request<SdlcCatalog>("/catalog/sdlc"),
   run: (pid: number) => request<RunStatus>(`/projects/${pid}/run`),
   startRun: (pid: number) => request<RunStatus>(`/projects/${pid}/runs`, { method: "POST" }),
   decide: (pid: number, decision: Decision) => request<RunStatus>(`/projects/${pid}/decision`, json("POST", decision)),

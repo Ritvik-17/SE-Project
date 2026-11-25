@@ -1,4 +1,8 @@
-"""Classification agent: normalises type (FR/NFR), multi-label categories and priority across all requirements.
+"""Classification agent: decides whether each requirement is functional or non-functional, and normalises the
+multi-label categories and priority across all requirements.
+
+It is the authority on the FR/NFR type: extraction only proposes one, and IDs are renumbered here (FR-LOAN-001,
+NFR-LOAN-001, ...) so the prefix always matches the final type.
 
 Standard (step 9): every requirement gets one or more of the 13 categories (multi-label); none may be left without
 a category. It also links dependencies between requirements (step 8), since only this agent sees the whole set.
@@ -51,8 +55,24 @@ def classification(state: ProjectState) -> ProjectState:
         if not r["categories"]:
             r = r | {"categories": ["functional" if r["type"] == "functional" else "operational"]}
         updated.append(r)
+    updated, renamed = _renumber(updated, state["domain"])
     record(state["project_id"], "classification_agent", "classified",
            {"requirements": len(reqs), "changed": changed, "unclassified": len(ids - by_id.keys()),
             "multi_label": sum(len(r["categories"]) > 1 for r in updated),
-            "dependencies": sum(len(r.get("depends_on", [])) for r in updated)})
+            "dependencies": sum(len(r.get("depends_on", [])) for r in updated), "renumbered": renamed,
+            "functional": sum(r["type"] == "functional" for r in updated),
+            "non_functional": sum(r["type"] == "non_functional" for r in updated)})
     return {"requirements": updated}
+
+
+def _renumber(reqs: list[dict], domain_id: str) -> tuple[list[dict], int]:
+    """Give every requirement an ID whose prefix matches its final type, keeping the order; remap dependencies."""
+    domain = get_catalog().domain(domain_id)
+    code = domain.code if domain else "GEN"
+    counters = {"functional": 0, "non_functional": 0}
+    new_id = {}
+    for r in reqs:
+        counters[r["type"]] += 1
+        new_id[r["id"]] = f"{'FR' if r['type'] == 'functional' else 'NFR'}-{code}-{counters[r['type']]:03d}"
+    out = [r | {"id": new_id[r["id"]], "depends_on": [new_id.get(d, d) for d in r.get("depends_on", [])]} for r in reqs]
+    return out, sum(old != new for old, new in new_id.items())

@@ -150,36 +150,28 @@ There are two graphs, built in `app/graph/builder.py`. Each agent is a module in
 
 ### 4.1 Requirements-analysis graph
 
+Seven agents and two human approval gates. The multi-step agents (review, compliance & security, planning) run each
+of their steps through `guard()` under the step's own name, so every step keeps its own narrow data view, write list
+and knowledge-base allowlist (`app/security/agent_permissions.py`).
+
 ```mermaid
 flowchart TD
     S([START]) --> IN[intake<br/><b>Coordinator</b>]
-    IN -->|Send × source chunk| EX[extraction<br/><b>Requirement extraction</b>]
-    EX --> CO[consolidate<br/><b>Coordinator</b>: IDs + traceability]
-    CO --> CL[classification<br/><b>Classification</b>]
-    CL --> QR[quality_review<br/><b>Quality review</b>]
-    CL --> CF[conflict_detection<br/><b>Conflict detection</b>]
-    CL --> CM[compliance<br/><b>Compliance</b> + RAG]
-    CL --> SP[security_privacy<br/><b>Security & privacy</b>]
-    CL --> RK[risk_analysis<br/><b>Risk analysis</b>]
-    CL --> GR[grounding<br/><b>Grounding</b>: RAG per requirement]
-    QR & CF & CM & SP & RK & GR --> V[validation<br/><b>Validation</b>: 10 quality checks + scores]
-    V -->|requirements that failed checks| Q[clarification<br/><b>Clarification</b>]
-    Q -->|blocking questions & round < max| CG{{clarification_gate<br/><b>Human approval</b>}}
-    Q -->|otherwise| BA{{baseline_approval<br/><b>Human approval</b>}}
-    CG -->|answers → new sources| IN
-    CG -->|skip| BA
-    BA -->|regenerate + feedback| IN
-    BA -->|approvers still pending| BA
-    BA -->|all required roles approved| PB[persist_baseline<br/><b>Documentation</b>]
-    PB --> SD[sdlc_selection<br/><b>SDLC selection</b>]
-    SD --> SA{{sdlc_approval<br/><b>Human approval</b>}}
-    SA -->|regenerate + feedback| SD
-    SA -->|approvers still pending| SA
-    SA -->|all approved| WF[sdlc_workflow<br/><b>Workflow</b>: model-specific phases + timeline]
-    WF --> WA{{workflow_approval<br/><b>Human approval</b>}}
-    WA -->|regenerate + feedback| WF
-    WA -->|approvers still pending| WA
-    WA -->|all approved| DOC[documentation<br/><b>Documentation</b>]
+    IN -->|Send × source chunk| EX[extraction<br/><b>Extraction</b>]
+    EX --> CO[consolidate<br/><b>Coordinator</b>: merge + traceability]
+    CO --> CL[classification<br/><b>Classification</b>: FR / NFR, categories, priority, IDs]
+    CL --> RV[review<br/><b>Review</b>: quality ∥ conflicts ∥ risk → questions]
+    CL --> CS[compliance_security<br/><b>Compliance & security</b>: compliance ∥ security ∥ evidence]
+    RV & CS --> AS[assess<br/><b>Coordinator</b>: 10 quality checks, scores, final questions]
+    AS --> RG{{requirements_gate<br/><b>Coordinator</b>: Approve requirements}}
+    RG -->|step 1: answers → new sources, or regenerate| IN
+    RG -->|step 1 skipped / approvers still pending| RG
+    RG -->|step 2: all required roles signed| FB[freeze_baseline<br/><b>Documentation</b>]
+    FB --> PL[planning<br/><b>Planning</b>: SDLC model + workflow]
+    PL --> PG{{plan_gate<br/><b>Coordinator</b>: Approve plan}}
+    PG -->|regenerate, or a different model chosen| PL
+    PG -->|approvers still pending| PG
+    PG -->|model and workflow approved| DOC[documentation<br/><b>Documentation</b>]
     DOC --> E([END])
 ```
 
@@ -206,32 +198,29 @@ human-in-the-loop control (step 16) in [human_in_the_loop.md](human_in_the_loop.
 
 | Agent | Node(s) | Kind | Writes to state | What it does |
 |---|---|---|---|---|
-| **Coordinator** | `intake`, `consolidate`, all routing functions | Rules | `sources`, `requirements`, `iteration` | Loads masked sources, splits them into chunks of about 8,000 characters, fans out extraction (`Send`), merges results, assigns IDs (`FR-LOAN-001`) and traceability, and makes every routing decision |
-| **Stakeholder interaction** | interview graph | LLM | transcript → source | Adaptive interview over the 13 step-7 topics relevant to the role; assesses every answer (complete, incomplete, vague, inconsistent, unknown, off-topic) and follows up within a per-topic budget; skips points answered in passing; saves coverage, open points and contradictions with the transcript. See [adaptive_interviews.md](adaptive_interviews.md) |
-| **Requirement extraction** | `extraction` (parallel) | LLM | `extractions` | Atomic, testable requirements in the step-8 structure (justification, assumptions, dependencies, verbatim quote…), guided by the source type and stakeholder role |
-| **Classification** | `classification` | LLM + rules | `requirements` | Consistent FR/NFR type, 13-category multi-label tags (never empty) and MoSCoW priority across all sources, with a rationale; links requirement-to-requirement dependencies |
-| **Quality review** | `quality_review` ∥ | LLM | `quality_findings` | Semantic step-10 checks: ambiguity, incompleteness, infeasibility, lack of testability, each with a fix |
-| **Clarification** | `clarification` (after validation) | LLM + rules | `clarifications`, `issues` | Domain gaps, plus a question for every requirement validation returned; deterministic fallback questions ensure none is dropped. Routed to the right role; failures of blocking checks are blocking |
-| **Conflict detection** | `conflict_detection` ∥ | Rules + LLM | `conflicts` | Exact duplicates (rules), plus contradictions, duplicates and overlaps (LLM). Hallucinated IDs are discarded |
-| **Compliance** | `compliance` ∥ | RAG + LLM | `compliance` | Retrieves active, in-force knowledge-base passages; proposes mappings with jurisdiction, required controls, evidence, retention/reporting obligations and mandatory checkpoints; finds gaps. Unbacked citations are downgraded; high-impact or weakly evidenced mappings need compliance/legal approval |
-| **Security & privacy** | `security_privacy` ∥ | LLM | `security_findings` | Missing controls, weak security requirements and privacy risks, each with a proposed requirement and a severity |
-| **Risk analysis** | `risk_analysis` ∥ | LLM | `risks` | Risk register (business, technical, compliance, security, operational), scored likelihood × impact |
-| **Grounding** | `grounding` ∥ | RAG + LLM | `grounding` | Step 6 for every requirement: routes by category to collections, retrieves evidence per requirement, judges support / contradiction, attaches verified citations and a combined confidence, escalates. See [retrieval_grounded_generation.md](retrieval_grounded_generation.md) |
-| **Validation** | `validation` (join) | Rules | `issues`, `quality`, `returned`, suggested requirements | Tags every finding with one of the ten step-10 checks (quotes verified against the source text), completes regulations and risk level per requirement, scores quality, returns failing requirements to the clarification agent, turns findings into `SUG-…` requirements |
-| **Human approval** | `clarification_gate`, `baseline_approval`, `sdlc_approval` | Rules + `interrupt()` | approvals, edits | Decides who must approve, pauses the graph, applies accept/reject/modify edits, and loops until every required role has signed |
-| **SDLC selection** | `sdlc_selection`, `sdlc_workflow` | LLM + rules + MCDA | `factors`, `sdlc_recommendations`, `sdlc_explanation`, `sdlc_workflow` | Derives the 13 step-13 factors (system size and stakeholder availability measured) and answers the course's 19 selection questions (measured data, else LLM, else an approver). TOPSIS + weighted fit over both, plus 30 sourced rules (`app/rules/sdlc.py`, `sdlc_models.yaml`), rank 10 models by % suitability. The LLM explains the ranking but cannot change it. After approval it tailors the chosen model's phases into a project workflow; rules add any missing mandatory controls |
-| **Documentation** | `persist_baseline`, `documentation` | DB + LLM | `artifacts` | Saves the baseline (step-8 fields included) and generates the eleven step-12 artefacts; every row links to its stakeholder statement and supporting document |
+| **Coordinator** | `intake`, `consolidate`, `assess`, `requirements_gate`, `plan_gate`, all routing functions | Rules + `interrupt()` | `sources`, `requirements`, `issues`, `quality`, `returned`, `clarifications`, approvals | Loads masked sources, splits them into chunks of about 8,000 characters and fans out extraction (`Send`); merges results with traceability; **assess** runs the ten step-10 quality checks (quotes verified against the source text), completes regulations and risk level per requirement, scores quality, turns findings into `SUG-…` requirements and gives every failing requirement a question; runs both human gates (decides who must approve, pauses, applies edits, loops until every required role has signed); makes every routing decision. Never calls the LLM |
+| **Extraction** | `extraction` (parallel) | LLM | `extractions` | Atomic, testable requirements in the step-8 structure (justification, assumptions, dependencies, verbatim quote…), guided by the source type and stakeholder role |
+| **Classification** | `classification` | LLM + rules | `requirements` | Decides functional vs non-functional, 13-category multi-label tags (never empty) and MoSCoW priority consistently across all sources, with a rationale; links requirement-to-requirement dependencies; numbers requirements `FR-…` / `NFR-…` by their final type |
+| **Review** | `review` (steps: `quality_review` ∥ `conflict_detection` ∥ `risk_analysis`, then `clarification`) | Rules + LLM + RAG | `quality_findings`, `conflicts`, `risks`, `clarifications` | Ambiguity, incompleteness, infeasibility and lack of testability with fixes; contradictions, duplicates and overlaps (exact duplicates by rule, hallucinated IDs discarded); a risk register scored likelihood × impact; then questions for each problem and for domain gaps, routed to the right role |
+| **Compliance & security** | `compliance_security` (steps: `compliance` ∥ `security_privacy` ∥ `grounding`) | RAG + LLM | `compliance`, `security_findings`, `grounding` | Proposes regulation mappings with jurisdiction, controls, evidence, retention/reporting obligations and checkpoints, and finds gaps (high-impact or weakly evidenced mappings need compliance/legal approval); missing controls and privacy risks with proposed requirements; step 6 grounding per requirement with verified citations, a combined confidence and escalation. See [retrieval_grounded_generation.md](retrieval_grounded_generation.md) |
+| **Planning** | `planning` (steps: `sdlc_selection`, then `sdlc_workflow`) | LLM + rules + MCDA | `factors`, `sdlc_recommendations`, `sdlc_explanation`, `sdlc_workflow` | Derives the 13 step-13 factors and answers the course's 19 selection questions; TOPSIS + weighted fit + 30 sourced rules rank 10 models by % suitability (the LLM explains but cannot change the ranking); then tailors the model's phases into a project workflow, with rules adding missing mandatory controls. Once the model is approved, only the workflow is rebuilt |
+| **Documentation** | `freeze_baseline`, `documentation` | DB + LLM | `artifacts` | Saves the approved baseline (step-8 fields included) and generates the eleven step-12 artefacts; every row links to its stakeholder statement and supporting document |
+| *Stakeholder interaction* | separate interview graph (§4.2) | LLM | transcript → source | Adaptive interview over the 13 step-7 topics relevant to the role. Not part of the analysis flow; its UI tab is currently hidden (`SHOW_INTERVIEWS` in `ProjectPage.tsx`). See [adaptive_interviews.md](adaptive_interviews.md) |
 
-∥ = runs in parallel. All six analysis agents start in the same step after classification, and LangGraph joins them at `validation`.
+∥ = runs in parallel. `review` and `compliance_security` start together after classification and LangGraph joins them
+at `assess`; inside each, the independent steps also run in parallel.
 
 ### 4.4 Human approval routing
 
-| Gate | Required approvers | Options |
+Both gates are run by the coordinator and each has two steps. The gate payloads keep their names (`clarification`,
+`baseline`, `sdlc`, `workflow`), so the API and UI show which step is pending.
+
+| Gate · step | Required approvers | Options |
 |---|---|---|
-| **Clarification** | The stakeholder role each question is routed to (answers are entered by the analyst) | Answer (masked, stored as a questionnaire source for that role, then all agents re-run), skip, or regenerate the analysis with feedback. At most `MAX_CLARIFICATION_ROUNDS` (2) rounds |
-| **Baseline** | Product owner (always); compliance & legal if any regulatory requirement or legal-review flag; infosec if any high-severity security finding or high security risk; architect if any must-have integration, performance or availability requirement; plus every role that owns a decision | Approve (with per-requirement accept, reject or modify edits) or request regeneration with feedback. High-risk security, architecture-critical, stakeholder-conflict and escalated requirements must be decided by their owning role; regulatory interpretations by compliance & legal. Suggested `SUG-…` items enter the baseline only if accepted |
-| **SDLC** | `SDLC_APPROVERS` (default: project manager, architect, infosec, compliance & legal, as step 14 requires) | Approve, optionally choosing a different model (justification required); request regeneration with feedback; or answer/correct the project-characteristic questions and re-rank |
-| **Workflow** | `WORKFLOW_APPROVERS` (default: project manager, infosec, compliance & legal) | Approve; modify phases and timeline (mandatory controls are reinstated); request regeneration with feedback |
+| **Approve requirements · 1 questions** | The stakeholder role each question is routed to (answers are entered by the analyst). Only when there are blocking questions; once per analysis pass | Answer (masked, stored as a questionnaire source for that role, then all agents re-run), skip to sign-off, or regenerate the analysis with feedback. At most `MAX_CLARIFICATION_ROUNDS` (2) rounds |
+| **Approve requirements · 2 sign-off** | Product owner (always); compliance & legal if any regulatory requirement or legal-review flag; infosec if any high-severity security finding or high security risk; architect if any must-have integration, performance or availability requirement; plus every role that owns a decision | Approve (with per-requirement accept, reject or modify edits) or request regeneration with feedback. High-risk security, architecture-critical, stakeholder-conflict and escalated requirements must be decided by their owning role; regulatory interpretations by compliance & legal. Suggested `SUG-…` items enter the baseline only if accepted |
+| **Approve plan · 1 SDLC model** | `SDLC_APPROVERS` (default: project manager, architect, infosec, compliance & legal, as step 14 requires) | Approve, optionally choosing a different model (justification required; the workflow is then rebuilt for it); request regeneration with feedback; or answer/correct the project-characteristic questions and re-rank |
+| **Approve plan · 2 workflow** | `WORKFLOW_APPROVERS` (default: project manager, infosec, compliance & legal) | Approve; modify phases and timeline (mandatory controls are reinstated); request regeneration with feedback |
 | **After completion** | Change requests: product owner, project manager + roles by impact. Readiness: project manager, operations, infosec, compliance & legal | Change requests to the approved baseline (impact analysis, new requirement version); production-readiness go / conditional / no-go with attestations and waivers. See [human_in_the_loop.md](human_in_the_loop.md) |
 
 The API rejects approvals from a role that isn't pending (403) and regeneration requests without feedback (422). All free text

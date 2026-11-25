@@ -70,7 +70,7 @@ def grounding(state: ProjectState) -> ProjectState:
             "grounding_confidence": v["confidence"], "evidence_strength": strength, "confidence": confidence,
             "escalation_reasons": requirement_escalation(r["categories"], v["support"], confidence),
         }
-    record(state["project_id"], "grounding_agent", "grounded_requirements", {
+    record(state["project_id"], "compliance_security_agent", "grounded_requirements", {
         "requirements": len(out),
         "by_support": {s: sum(g["support"] == s for g in out.values()) for s in
                        ("supported", "partially_supported", "unsupported", "contradicts_evidence", "no_obligation_expected")},

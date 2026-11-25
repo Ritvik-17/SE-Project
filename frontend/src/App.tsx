@@ -7,9 +7,11 @@ import KnowledgePage from "./pages/KnowledgePage";
 import OperationsPage from "./pages/OperationsPage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
-import ScopePage from "./pages/ScopePage";
+import SdlcPage from "./pages/SdlcPage";
 
 const OPS_ROLES = ["admin", "auditor_regulator", "project_manager", "compliance_legal"];
+/** The Deployment & monitoring page is built but hidden for now. Set to true to show it again. */
+const SHOW_OPERATIONS = false;
 
 // Mermaid is large; load the graph page only when visited.
 const AgentsPage = lazy(() => import("./pages/AgentsPage"));
@@ -31,9 +33,9 @@ export default function App() {
         <nav aria-label="Main">
           <NavLink to="/" end>Projects</NavLink>
           <NavLink to="/knowledge">Knowledge base</NavLink>
-          <NavLink to="/scope">System scope</NavLink>
+          <NavLink to="/sdlc">SDLC engine</NavLink>
           <NavLink to="/agents">Agent graph</NavLink>
-          {OPS_ROLES.some((r) => me.roles.includes(r)) && <NavLink to="/operations">Deployment &amp; monitoring</NavLink>}
+          {SHOW_OPERATIONS && OPS_ROLES.some((r) => me.roles.includes(r)) && <NavLink to="/operations">Deployment &amp; monitoring</NavLink>}
           {me.roles.includes("admin") && <NavLink to="/admin">Administration</NavLink>}
         </nav>
         <div className="rail-foot">
@@ -56,11 +58,11 @@ export default function App() {
         <Routes>
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/knowledge" element={<KnowledgePage />} />
-          <Route path="/scope" element={<ScopePage />} />
+          <Route path="/sdlc" element={<SdlcPage />} />
           <Route path="/agents" element={<Suspense fallback={<div className="page muted">Loading graph…</div>}><AgentsPage /></Suspense>} />
           <Route path="/projects/:id" element={<ProjectPage />} />
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="/operations" element={<OperationsPage />} />
+          {SHOW_OPERATIONS && <Route path="/operations" element={<OperationsPage />} />}
         </Routes>
       </div>
     </div>

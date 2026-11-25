@@ -137,10 +137,14 @@ def _masked(value: str) -> str:
 
 
 def _run_status(request: Request, project_id: int) -> RunStatus:
-    snapshot = request.app.state.graph.get_state(_config(project_id))
+    graph = request.app.state.graph
+    snapshot = graph.get_state(_config(project_id))
     interrupts = [i.value for task in snapshot.tasks for i in task.interrupts]
     if not snapshot.values:
         status = "not_started"
+    elif snapshot.next and not set(snapshot.next) <= set(graph.nodes):
+        # Paused at a node of an earlier version of the agent flow: it cannot resume, only restart.
+        status, interrupts = "outdated", []
     elif interrupts:
         status = "awaiting_input"
     elif snapshot.next:
@@ -208,6 +212,25 @@ def catalog():
     for d in data["domains"]:  # step 20: domains activated or withdrawn by administrators
         d["status"] = ops.domain_status(d["id"])
     return data
+
+
+@app.get("/catalog/sdlc")
+def sdlc_catalog():
+    """The SDLC engine as configured: models, decision factors, selection questions, rules and mandatory controls."""
+    from app.agents.workflow import MANDATORY_CONTROLS
+    from app.rules.sdlc import load_sdlc_catalog_versioned
+    cat, version = load_sdlc_catalog_versioned()
+    return {
+        "version": version, "scoring": cat["scoring"], "factors": cat["factors"],
+        "characteristics": [{"id": g["id"], "name": g["name"], "questions": [q["text"] for q in g["questions"]]}
+                            for g in cat["characteristics"]],
+        "models": [{"id": m["id"], "name": m["name"], "description": m["description"], "source": m.get("source"),
+                    "structure": m["execution"]["structure"], "cadence": m["execution"]["cadence"],
+                    "phases": [{"name": p["name"], "kinds": p["kinds"], "recurrence": p["recurrence"]} for p in m["phases"]]}
+                   for m in cat["models"]],
+        "rules": [{"id": r["id"], "source": r["source"], "reason": r["reason"], "effects": r["effects"]} for r in cat["rules"]],
+        "mandatory_controls": MANDATORY_CONTROLS,
+    }
 
 
 @app.get("/catalog/roles/{role_id}/interview")
@@ -395,6 +418,8 @@ def submit_decision(project_id: int, request: Request, body: GateDecision = Body
     Human-in-the-loop rules (step 16) are enforced here, before the graph resumes; see guide/human_in_the_loop.md."""
     _get_project(session, project_id)
     run = _run_status(request, project_id)
+    if run.status == "outdated":
+        raise HTTPException(409, "This analysis was started with an earlier version of the agent flow. Restart the analysis.")
     if run.status != "awaiting_input":
         raise HTTPException(409, "No decision is pending for this project")
     if body.gate != run.gate:

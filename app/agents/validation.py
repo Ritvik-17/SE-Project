@@ -195,7 +195,7 @@ def validation(state: ProjectState) -> ProjectState:
     quality["requirements_passing"] = round(1 - len(failed) / n, 2)
 
     suggestions = _suggestions(state)
-    record(state["project_id"], "validation_agent", "validated",
+    record(state["project_id"], "coordinator_agent", "validated",
            {"issues": len(issues), "high": sum(i["severity"] == "high" for i in issues),
             "returned_for_clarification": len(returned), "suggested_requirements": len(suggestions), "quality": quality})
     return {"issues": issues, "quality": quality, "requirements": reqs + suggestions, "returned": returned}

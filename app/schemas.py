@@ -449,7 +449,7 @@ class WorkflowDecision(BaseModel):
 
 class RunStatus(BaseModel):
     project_id: int
-    status: Literal["awaiting_input", "completed", "running", "not_started"]
+    status: Literal["awaiting_input", "completed", "running", "not_started", "outdated"]
     gate: str | None = None
     next: list[str]
     pending: dict[str, Any] | None = None

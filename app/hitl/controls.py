@@ -1,16 +1,16 @@
 """Which AI outputs need an explicit human decision, and which role owns that decision.
 
 Step 16 makes human approval mandatory for eight kinds of decision. Five are taken inside the analysis graph:
-  1 final requirement baselines      baseline_approval gate (all required roles approve)
+  1 final requirement baselines      requirements_gate, sign-off step (all required roles approve)
   2 regulatory interpretations       per-mapping legal decision by compliance & legal, at the baseline gate
   3 high-risk security requirements  per-requirement decision by information security, at the baseline gate
   4 conflicting stakeholder decisions per-requirement decision by the baseline owner, at the baseline gate
   5 architecture-critical requirements per-requirement decision by the architect, at the baseline gate
-  6 SDLC selection                   sdlc_approval gate (project manager, architect, security, compliance)
+  6 SDLC selection                   plan_gate, SDLC step (project manager, architect, security, compliance)
 and two after the graph has finished (app/hitl/changes.py, app/hitl/readiness.py):
   7 changes to approved requirements change requests with impact analysis and role-based approval
   8 production-readiness decisions   go / no-go review against a readiness checklist
-The generated workflow (step 15) also has its own approval gate.
+The generated workflow (step 15) is approved in the second step of plan_gate.
 """
 
 from app.config import get_settings
@@ -20,20 +20,20 @@ ARCH_CATEGORIES = {"integration", "performance", "availability"}
 REGULATED_CATEGORIES = {"regulatory", "privacy", "audit"}
 
 CONTROL_POINTS = [
-    {"id": "baseline", "name": "Final requirement baseline", "where": "Baseline approval gate",
+    {"id": "baseline", "name": "Final requirement baseline", "where": "Approve requirements (sign-off)",
      "who": "Baseline owner plus the roles the content requires", "actions": "accept, reject, modify each requirement; approve; regenerate"},
-    {"id": "regulatory_interpretations", "name": "Regulatory interpretations", "where": "Baseline approval gate, Compliance tab",
+    {"id": "regulatory_interpretations", "name": "Regulatory interpretations", "where": "Approve requirements (sign-off), Compliance tab",
      "who": "Compliance & legal", "actions": "accept, reject or modify each interpretation; regenerate the baseline"},
-    {"id": "high_risk_security", "name": "High-risk security requirements", "where": "Baseline approval gate",
+    {"id": "high_risk_security", "name": "High-risk security requirements", "where": "Approve requirements (sign-off)",
      "who": "Information security", "actions": "accept, reject or modify each requirement"},
-    {"id": "stakeholder_conflicts", "name": "Conflicting stakeholder decisions", "where": "Baseline approval gate",
+    {"id": "stakeholder_conflicts", "name": "Conflicting stakeholder decisions", "where": "Approve requirements (sign-off)",
      "who": "Baseline owner (product owner)", "actions": "accept, reject or modify each conflicting requirement"},
-    {"id": "architecture_critical", "name": "Architecture-critical requirements", "where": "Baseline approval gate",
+    {"id": "architecture_critical", "name": "Architecture-critical requirements", "where": "Approve requirements (sign-off)",
      "who": "Architect", "actions": "accept, reject or modify each requirement"},
-    {"id": "sdlc_selection", "name": "SDLC selection", "where": "SDLC approval gate",
+    {"id": "sdlc_selection", "name": "SDLC selection", "where": "Approve plan (SDLC model)",
      "who": "Project manager, architect, information security, compliance & legal",
      "actions": "approve the recommendation, choose another model (with justification), correct the inputs and re-rank, regenerate"},
-    {"id": "workflow", "name": "Project SDLC workflow", "where": "Workflow approval gate",
+    {"id": "workflow", "name": "Project SDLC workflow", "where": "Approve plan (workflow)",
      "who": "Project manager, information security, compliance & legal", "actions": "approve, modify phases and timeline, regenerate"},
     {"id": "requirement_changes", "name": "Changes to approved requirements", "where": "Change requests (after completion)",
      "who": "Product owner, project manager and the roles the change affects", "actions": "approve, reject, request changes"},

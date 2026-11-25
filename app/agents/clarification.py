@@ -98,22 +98,33 @@ def clarification(state: ProjectState) -> ProjectState:
                            + "; ".join(c["message"][:140] for c in i["checks"][:3]) for i in returned) or "(none)",
         roles=roles_reference(), limit=max(12, len(returned) + 4), requirements=format_requirements(reqs, with_source=True)))
     questions = [q.model_dump() | {"origin": "clarification_agent"} for q in result.questions]
+    questions = finalise_questions(questions, returned)
+    issues = [*state.get("issues", []), *question_issues(questions)]
+    record(state["project_id"], "review_agent", "questions_raised",
+           {"total": len(questions), "blocking": sum(q["severity"] == "blocking" for q in questions),
+            "returned_requirements": len(returned),
+            "covered_by_fallback": sum(q["origin"] == "validation" for q in questions)})
+    return {"clarifications": questions, "issues": issues}
 
-    # A returned requirement that fails a blocking check keeps its question blocking, whatever the LLM said.
+
+def finalise_questions(questions: list[dict], returned: list[dict]) -> list[dict]:
+    """Deterministic rules applied to the drafted questions once validation has decided what failed.
+
+    A returned requirement that fails a blocking check keeps its question blocking, whatever the LLM said, and any
+    returned requirement no question covers gets a fallback question, so no failure is silently dropped.
+    """
+    questions = [dict(q) for q in questions]
     blocking_ids = {i["req_id"] for i in returned if i["blocking"]}
     for q in questions:
         if blocking_ids & set(q["related_req_ids"]):
             q["severity"] = "blocking"
     covered = {i for q in questions for i in q["related_req_ids"]}
-    questions += _fallback_questions(returned, covered)
+    return questions + _fallback_questions(returned, covered)
 
+
+def question_issues(questions: list[dict]) -> list[dict]:
+    """One issue per open question, so the baseline gate lists them with everything else."""
     catalog = get_catalog()
-    issues = [*state.get("issues", []), *({
-        "req_id": ", ".join(q["related_req_ids"]) or None, "type": "clarification_needed", "check": None,
-        "message": f"{q['question']} (ask {catalog.role(q['target_role']).name})",
-        "severity": "high" if q["severity"] == "blocking" else "low"} for q in questions)]
-    record(state["project_id"], "clarification_agent", "questions_raised",
-           {"total": len(questions), "blocking": sum(q["severity"] == "blocking" for q in questions),
-            "returned_requirements": len(returned),
-            "covered_by_fallback": sum(q["origin"] == "validation" for q in questions)})
-    return {"clarifications": questions, "issues": issues}
+    return [{"req_id": ", ".join(q["related_req_ids"]) or None, "type": "clarification_needed", "check": None,
+             "message": f"{q['question']} (ask {catalog.role(q['target_role']).name})",
+             "severity": "high" if q["severity"] == "blocking" else "low"} for q in questions]

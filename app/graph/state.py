@@ -18,6 +18,8 @@ class ProjectState(TypedDict, total=False):
     clarification_round: int       # coordinator: stakeholder clarification rounds so far
     feedback: str                  # latest reviewer feedback used for regeneration
     clarified: bool                # human: new clarification answers were added in the last gate
+    questions_iteration: int       # coordinator: the pass in which blocking questions were last put to people
+    gate_step: str                 # coordinator: which step of "Approve requirements" ran last (questions | signoff)
 
     sources: list[dict]            # coordinator: masked sources (id, title, type, role, sensitivity, flags, text)
     extractions: Annotated[list[dict], extend_or_reset]  # extraction agent: one entry per source chunk

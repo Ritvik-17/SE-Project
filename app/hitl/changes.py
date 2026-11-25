@@ -199,5 +199,5 @@ def apply(session: Session, graph, cr: ApprovalRequest) -> None:
     graph.update_state(graph_config(cr.project_id), {"requirements": reqs}, as_node="documentation")
     project.status = "artifacts_stale"
     cr.status, cr.closed_at = "applied", _now()
-    record(cr.project_id, "human_approval_agent", "change_applied",
+    record(cr.project_id, "coordinator_agent", "change_applied",
            {"cr": cr.id, "action": p["action"], "req_id": req_id, "artefacts_to_regenerate": p["impact"]["artefacts_to_regenerate"]})

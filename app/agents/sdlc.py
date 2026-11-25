@@ -167,7 +167,7 @@ def sdlc_selection(state: ProjectState) -> ProjectState:
         rules="; ".join(f"{r['rule']} ({r['source']}): {r['reason']}" for r in fired) or "none", ranking=ranking_text,
         characteristics="; ".join(f"{c['id']}={c['answer'] or 'unknown'} ({c['source']})" for c in characteristics),
         requirements=reqs))
-    record(state["project_id"], "sdlc_selection_agent", "recommended_sdlc",
+    record(state["project_id"], "planning_agent", "recommended_sdlc",
            {"factors": values, "ranking": [(r["model"], r["score"]) for r in ranked], "rules_fired": [r["rule"] for r in fired],
             "characteristics": {c["id"]: [c["answer"], c["source"]] for c in characteristics}, "rules_version": version})
     return {"factors": values, "factor_signals": signals, "sdlc_recommendations": ranked, "sdlc_rules_fired": fired,

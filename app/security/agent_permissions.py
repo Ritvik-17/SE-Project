@@ -1,6 +1,7 @@
 """Agent-level permissions (step 17): each agent gets only the data and tools its task needs.
 
-Every graph node runs through `guard()`:
+Every graph node runs through `guard()`, and so does every step inside a multi-step agent (review, compliance &
+security, planning), so each step keeps its own narrow view even though it is part of a larger agent:
   - reads   the node receives only these state keys; for list-of-dict keys a field list narrows it further
             (e.g. the security agent sees each source's title and sensitivity, never its text);
   - writes  the node may only return these keys; anything else is refused and audited;
@@ -18,51 +19,65 @@ CTX = ["project_id", "domain", "jurisdiction"]
 SRC_META = ["id", "title", "source_type", "stakeholder_role", "sensitivity"]
 
 POLICY: dict[str, dict] = {
-    # coordinator
+    # coordinator agent
     "intake": {"reads": ["project_id", "iteration", "clarification_round"],
                "writes": ["sources", "extractions", "iteration", "baseline_approvals", "sdlc_approvals", "provenance"],
                "tools": []},
+    # extraction agent
     "extraction": {"reads": ["project_id", "domain", "source", "text", "chunk", "feedback"], "writes": ["extractions"],
                    "tools": ["llm"]},
+    # coordinator agent
     "consolidate": {"reads": ["project_id", "domain", "extractions"], "writes": ["requirements"], "tools": []},
-    # analysis agents
+    # classification agent
     "classification": {"reads": CTX + ["requirements"], "writes": ["requirements"], "tools": ["llm"]},
+    # review agent: the node, then its guarded steps (each keeps its own view, writes and allowlist)
+    "review": {"reads": CTX + ["requirements"], "writes": ["quality_findings", "conflicts", "risks", "clarifications"],
+               "tools": []},
     "quality_review": {"reads": CTX + ["requirements"], "writes": ["quality_findings"], "tools": ["llm"]},
     "conflict_detection": {"reads": CTX + ["requirements"], "writes": ["conflicts"], "tools": ["llm"]},
+    "risk_analysis": {"reads": CTX + ["requirements"], "writes": ["risks"], "tools": ["llm"], "kb": "risk_analysis_agent"},
+    "clarification": {"reads": CTX + ["requirements", "returned", "issues"], "writes": ["clarifications", "issues"],
+                      "tools": ["llm"], "kb": "clarification_agent"},
+    # compliance & security agent: the node, then its guarded steps
+    "compliance_security": {"reads": CTX + ["requirements", ("sources", ["title", "sensitivity"])],
+                            "writes": ["compliance", "security_findings", "grounding"], "tools": []},
     "compliance": {"reads": CTX + ["requirements"], "writes": ["compliance"], "tools": ["llm"], "kb": "compliance_agent"},
     "security_privacy": {"reads": CTX + ["requirements", ("sources", ["title", "sensitivity"])],
                          "writes": ["security_findings"], "tools": ["llm"], "kb": "security_privacy_agent"},
-    "risk_analysis": {"reads": CTX + ["requirements"], "writes": ["risks"], "tools": ["llm"], "kb": "risk_analysis_agent"},
     "grounding": {"reads": CTX + ["requirements"], "writes": ["grounding"], "tools": ["llm"], "kb": "grounding_agent"},
-    "validation": {"reads": CTX + ["requirements", "grounding", "compliance", "risks", "security_findings", "conflicts",
-                                   "quality_findings", ("sources", SRC_META + ["text", "injection_flags"])],
-                   "writes": ["issues", "quality", "requirements", "returned"], "tools": []},
-    "clarification": {"reads": CTX + ["requirements", "returned", "issues"], "writes": ["clarifications", "issues"],
-                      "tools": ["llm"], "kb": "clarification_agent"},
-    # human gates
-    "clarification_gate": {"reads": ["project_id", "clarifications", "clarification_round"],
-                           "writes": ["clarified", "clarification_round", "feedback"], "tools": ["ingest"]},
-    "baseline_approval": {"reads": CTX + ["requirements", "baseline_approvals", "issues", "quality", "conflicts",
-                                          "clarifications", "compliance", "security_findings", "risks", "returned",
-                                          "quality_findings"],
-                          "writes": ["baseline_approvals", "requirements", "compliance", "feedback"], "tools": []},
-    "persist_baseline": {"reads": ["project_id", "requirements"], "writes": [], "tools": []},
+    # coordinator: scoring (deterministic) and the two human gates
+    "assess": {"reads": CTX + ["requirements", "grounding", "compliance", "risks", "security_findings", "conflicts",
+                               "quality_findings", "clarifications", ("sources", SRC_META + ["text", "injection_flags"])],
+               "writes": ["issues", "quality", "requirements", "returned", "clarifications"], "tools": []},
+    "requirements_gate": {"reads": CTX + ["iteration", "requirements", "baseline_approvals", "issues", "quality", "conflicts",
+                                          "clarifications", "clarification_round", "questions_iteration", "compliance",
+                                          "security_findings", "risks", "returned", "quality_findings"],
+                          "writes": ["clarified", "clarification_round", "questions_iteration", "gate_step", "feedback",
+                                     "baseline_approvals", "requirements", "compliance"], "tools": ["ingest"]},
+    "plan_gate": {"reads": CTX + ["sdlc_approvals", "sdlc_recommendations", "factors", "sdlc_rules_fired",
+                                  "sdlc_explanation", "sdlc_decision", "sdlc_characteristics", "sdlc_rules_version",
+                                  "sdlc_characteristic_answers", "sdlc_workflow", "workflow_approvals", "requirements"],
+                  "writes": ["sdlc_approvals", "feedback", "sdlc_characteristic_answers", "sdlc_decision",
+                             "workflow_approvals", "sdlc_workflow"], "tools": []},
+    # planning agent: the node, then its two steps
+    "planning": {"reads": CTX + ["requirements", "risks", "compliance", ("sources", ["stakeholder_role"]),
+                                 "clarifications", "clarification_round", "feedback", "sdlc_approvals",
+                                 "sdlc_characteristic_answers", "sdlc_decision", "factors", "workflow_approvals"],
+                 "writes": ["factors", "factor_signals", "sdlc_recommendations", "sdlc_rules_fired",
+                            "sdlc_rules_version", "sdlc_characteristics", "sdlc_explanation", "sdlc_approvals",
+                            "sdlc_decision", "sdlc_workflow", "workflow_approvals"], "tools": []},
     "sdlc_selection": {"reads": CTX + ["requirements", "risks", "compliance", ("sources", ["stakeholder_role"]),
                                        "clarifications", "clarification_round", "feedback", "sdlc_approvals",
                                        "sdlc_characteristic_answers"],
                        "writes": ["factors", "factor_signals", "sdlc_recommendations", "sdlc_rules_fired",
                                   "sdlc_rules_version", "sdlc_characteristics", "sdlc_explanation", "sdlc_approvals",
                                   "sdlc_decision"], "tools": ["llm"]},
-    "sdlc_approval": {"reads": ["project_id", "sdlc_approvals", "sdlc_recommendations", "factors", "sdlc_rules_fired",
-                                "sdlc_explanation", "sdlc_decision", "sdlc_characteristics", "sdlc_rules_version",
-                                "sdlc_characteristic_answers"],
-                      "writes": ["sdlc_approvals", "feedback", "sdlc_characteristic_answers", "sdlc_decision"], "tools": []},
     "sdlc_workflow": {"reads": CTX + ["sdlc_decision", "requirements", "compliance", "risks", "factors", "feedback",
                                       "workflow_approvals", ("sources", ["stakeholder_role"]), "clarifications",
                                       "clarification_round"],
                       "writes": ["sdlc_workflow", "workflow_approvals"], "tools": ["llm"]},
-    "workflow_approval": {"reads": CTX + ["sdlc_workflow", "workflow_approvals", "sdlc_decision", "requirements"],
-                          "writes": ["workflow_approvals", "feedback", "sdlc_workflow"], "tools": []},
+    # documentation agent
+    "freeze_baseline": {"reads": ["project_id", "requirements"], "writes": [], "tools": []},
     "documentation": {"reads": CTX + ["requirements", ("sources", SRC_META), "baseline_approvals", "sdlc_approvals",
                                       "sdlc_decision", "sdlc_recommendations", "sdlc_explanation", "sdlc_rules_fired",
                                       "sdlc_rules_version", "sdlc_characteristics", "compliance", "risks",

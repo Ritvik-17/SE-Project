@@ -192,10 +192,12 @@ def test_catalog_and_graph_endpoints(client):
     tpl = client.get("/catalog/roles/risk_management/interview", params={"domain": "loan_processing"}).json()
     assert any("affordability" in q for s in tpl["sections"] for q in s["questions"])
     graphs = client.get("/graph").json()
-    for node in ("intake", "classification", "compliance", "security_privacy", "risk_analysis", "validation",
-                 "clarification_gate", "baseline_approval", "sdlc_approval", "documentation"):
+    for node in ("intake", "extraction", "consolidate", "classification", "review", "compliance_security", "assess",
+                 "requirements_gate", "freeze_baseline", "planning", "plan_gate", "documentation"):
         assert node in graphs["analysis"]
-    assert "ask_stakeholder" in graphs["interview"] and "sdlc_workflow" in graphs["analysis"]
+    for old in ("validation", "clarification_gate", "baseline_approval", "sdlc_approval", "sdlc_workflow", "risk_analysis"):
+        assert old not in graphs["analysis"]
+    assert "ask_stakeholder" in graphs["interview"]
 
 
 

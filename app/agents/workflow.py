@@ -78,6 +78,22 @@ def _mentions(phases: list[dict], *words: str) -> bool:
     return any(w in text for w in words)
 
 
+# What enforce_controls() guarantees, for display (keep in step with the code below).
+MANDATORY_CONTROLS = [
+    {"control": "Threat modelling (STRIDE) of new features and integrations", "phase": "design",
+     "when": "the baseline has security or privacy requirements"},
+    {"control": "Static application security testing (SAST) and dependency scanning on every change", "phase": "implementation",
+     "when": "always"},
+    {"control": "Transaction-integrity and reconciliation testing (amounts, idempotency, duplicates, reversals)",
+     "phase": "testing / validation", "when": "financial domains (loans, KYC, payments, banking)"},
+    {"control": "Verify audit-trail completeness for every state change", "phase": "testing / validation",
+     "when": "the baseline has audit requirements"},
+    {"control": "Compliance officer approval of regulatory requirements before deployment", "phase": "release",
+     "when": "the baseline has regulatory requirements (compliance & legal is added to the release gate)"},
+    {"control": "Production-readiness review (go / no-go)", "phase": "last release gate", "when": "always"},
+]
+
+
 def enforce_controls(phases: list[dict], state: ProjectState) -> list[dict]:
     """Mandatory controls for financial systems, placed in the phase whose kind they belong to (step 15 example)."""
     cats = {c for r in baseline(state) for c in r["categories"]}
@@ -217,7 +233,7 @@ def sdlc_workflow(state: ProjectState) -> ProjectState:
     raw = result.model_dump()
     workflow = finalise(raw, model, state)
     workflow["generated"] = raw  # kept so human edits can be re-finalised against the original
-    record(state["project_id"], "workflow_agent", "workflow_generated",
+    record(state["project_id"], "planning_agent", "workflow_generated",
            {"model": model["name"], "phases": len(workflow["phases"]), "total_weeks": workflow["schedule"]["total_weeks"],
             "controls_added": len(workflow["controls_added_by_rules"]), "phases_added": workflow["phases_added_by_rules"],
             "phases_dropped": workflow["phases_dropped"], "unassigned": len(workflow["requirements_not_assigned"])})

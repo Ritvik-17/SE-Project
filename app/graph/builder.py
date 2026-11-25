@@ -1,31 +1,28 @@
 """Graph wiring. The topology here is the central orchestrator: execution order, parallelism and approval gates.
 
-See guide/architecture.md §4 for the diagram.
+Seven agents (see guide/architecture.md §4):
+  coordinator            intake · consolidate · assess · requirements_gate · plan_gate   (no LLM)
+  extraction             extraction (one per source chunk, in parallel)
+  classification         classification
+  review                 review                 ┐ in parallel
+  compliance & security  compliance_security    ┘
+  planning               planning
+  documentation          freeze_baseline · documentation
 """
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
 
-from app.agents import (approval, clarification, classification, compliance, conflict, coordinator, documentation,
-                        extraction, grounding, interviewer, quality_review, risk, sdlc, security_privacy, validation,
-                        workflow)
+from app.agents import (approval, classification, compliance_security, coordinator, documentation, extraction,
+                        interviewer, planning, review)
 from app.graph.state import InterviewState, ProjectState
 from app.security.agent_permissions import guard
-
-ANALYSIS_AGENTS = {
-    "quality_review": quality_review.quality_review,
-    "conflict_detection": conflict.conflict_detection,
-    "compliance": compliance.compliance,
-    "security_privacy": security_privacy.security_privacy,
-    "risk_analysis": risk.risk_analysis,
-    "grounding": grounding.grounding,
-}
 
 
 def build_analysis_graph(checkpointer: BaseCheckpointSaver | None = None):
     g = StateGraph(ProjectState)
 
-    # Coordinator + extraction (fan-out per source chunk)
+    # Coordinator loads the inputs and fans out one extraction per source chunk
     g.add_node("intake", guard("intake", coordinator.intake))
     g.add_node("extraction", guard("extraction", extraction.extraction))
     g.add_node("consolidate", guard("consolidate", coordinator.consolidate))
@@ -35,36 +32,26 @@ def build_analysis_graph(checkpointer: BaseCheckpointSaver | None = None):
     g.add_edge("extraction", "consolidate")
     g.add_edge("consolidate", "classification")
 
-    # Specialist analysis agents run in parallel; validation joins them
-    for name, fn in ANALYSIS_AGENTS.items():
-        g.add_node(name, guard(name, fn))
-        g.add_edge("classification", name)
-    g.add_node("validation", guard("validation", validation.validation))
-    g.add_edge(list(ANALYSIS_AGENTS), "validation")
-    # Step 10: requirements that fail validation are returned to the clarification agent.
-    g.add_node("clarification", guard("clarification", clarification.clarification))
-    g.add_edge("validation", "clarification")
+    # Two analysis agents run in parallel; the coordinator joins and scores them
+    g.add_node("review", guard("review", review.review))
+    g.add_node("compliance_security", guard("compliance_security", compliance_security.compliance_security))
+    g.add_node("assess", guard("assess", coordinator.assess))
+    g.add_edge("classification", "review")
+    g.add_edge("classification", "compliance_security")
+    g.add_edge(["review", "compliance_security"], "assess")
 
-    # Human gates (human-approval agent) and the paths out of them
-    g.add_node("clarification_gate", guard("clarification_gate", approval.clarification_gate))
-    g.add_node("baseline_approval", guard("baseline_approval", approval.baseline_approval))
-    g.add_node("persist_baseline", guard("persist_baseline", documentation.persist_baseline))
-    g.add_node("sdlc_selection", guard("sdlc_selection", sdlc.sdlc_selection))
-    g.add_node("sdlc_approval", guard("sdlc_approval", approval.sdlc_approval))
-    g.add_node("sdlc_workflow", guard("sdlc_workflow", workflow.sdlc_workflow))
-    g.add_node("workflow_approval", guard("workflow_approval", approval.workflow_approval))
+    # Approve requirements → freeze the baseline → plan → approve plan → documents
+    g.add_node("requirements_gate", guard("requirements_gate", approval.requirements_gate))
+    g.add_node("freeze_baseline", guard("freeze_baseline", documentation.persist_baseline))
+    g.add_node("planning", guard("planning", planning.planning))
+    g.add_node("plan_gate", guard("plan_gate", approval.plan_gate))
     g.add_node("documentation", guard("documentation", documentation.documentation))
-
-    g.add_conditional_edges("clarification", coordinator.after_validation, ["clarification_gate", "baseline_approval"])
-    g.add_conditional_edges("clarification_gate", coordinator.after_clarification, ["intake", "baseline_approval"])
-    g.add_conditional_edges("baseline_approval", coordinator.after_baseline,
-                            ["intake", "baseline_approval", "persist_baseline"])
-    g.add_edge("persist_baseline", "sdlc_selection")
-    g.add_edge("sdlc_selection", "sdlc_approval")
-    g.add_conditional_edges("sdlc_approval", coordinator.after_sdlc, ["sdlc_selection", "sdlc_approval", "sdlc_workflow"])
-    g.add_edge("sdlc_workflow", "workflow_approval")
-    g.add_conditional_edges("workflow_approval", coordinator.after_workflow,
-                            ["sdlc_workflow", "workflow_approval", "documentation"])
+    g.add_edge("assess", "requirements_gate")
+    g.add_conditional_edges("requirements_gate", coordinator.after_requirements,
+                            ["intake", "requirements_gate", "freeze_baseline"])
+    g.add_edge("freeze_baseline", "planning")
+    g.add_edge("planning", "plan_gate")
+    g.add_conditional_edges("plan_gate", coordinator.after_plan, ["planning", "plan_gate", "documentation"])
     g.add_edge("documentation", END)
     return g.compile(checkpointer=checkpointer)
 

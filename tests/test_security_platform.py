@@ -160,10 +160,10 @@ def test_agent_least_privilege():
     assert "risks" not in seen and seen["sources"] == [{"title": "t", "sensitivity": "restricted"}]  # no raw text
     with pytest.raises(AgentPermissionError):
         guard("risk_analysis", lambda s: {"requirements": []})({"project_id": 1})  # writes outside its remit
-    token = current_agent.set("validation")
+    token = current_agent.set("assess")
     try:
         with pytest.raises(AgentPermissionError):
-            require_tool("llm")  # validation is deterministic: no model access
+            require_tool("llm")  # the coordinator's scoring is deterministic: no model access
         with pytest.raises(AgentPermissionError):
             check_kb_identity("compliance_agent")
     finally:
@@ -175,6 +175,16 @@ def test_agent_least_privilege():
         check_kb_identity("risk_analysis_agent")
     finally:
         current_agent.reset(token)
+    # A multi-step agent node has no model or knowledge-base access of its own: only its guarded steps do.
+    for node in ("review", "compliance_security", "planning", "requirements_gate", "plan_gate"):
+        token = current_agent.set(node)
+        try:
+            with pytest.raises(AgentPermissionError):
+                require_tool("llm")
+            with pytest.raises(AgentPermissionError):
+                check_kb_identity("compliance_agent")
+        finally:
+            current_agent.reset(token)
 
 
 def test_prompt_and_output_filtering(monkeypatch):

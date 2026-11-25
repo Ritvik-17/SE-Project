@@ -10,12 +10,18 @@ interface Props { project: Project; sourceCount: number }
 
 const STAGES = [
   { key: "analysis", label: "Agents analyse" },
-  { key: "clarification", label: "Clarification" },
-  { key: "baseline", label: "Baseline approval" },
-  { key: "sdlc", label: "SDLC approval" },
-  { key: "workflow", label: "Workflow approval" },
+  { key: "requirements", label: "Approve requirements" },
+  { key: "plan", label: "Approve plan" },
   { key: "completed", label: "Documents" },
 ];
+
+/** The four gate payloads belong to two approval stages, each with two steps. */
+const GATE_STAGE: Record<string, { stage: string; step: string }> = {
+  clarification: { stage: "requirements", step: "Step 1 of 2 · answer the blocking questions" },
+  baseline: { stage: "requirements", step: "Step 2 of 2 · sign off the requirement baseline" },
+  sdlc: { stage: "plan", step: "Step 1 of 2 · approve the SDLC model" },
+  workflow: { stage: "plan", step: "Step 2 of 2 · approve the project workflow" },
+};
 
 export default function AnalysisPanel({ project, sourceCount }: Props) {
   const [run, setRun] = useState<RunStatus | null>(null);
@@ -42,7 +48,8 @@ export default function AnalysisPanel({ project, sourceCount }: Props) {
   const decide = (label: string, d: Decision) => act(label, () => api.decide(project.id, d));
   if (!run) return <p className="muted">Loading…</p>;
 
-  const stage = run.status === "completed" ? "completed" : run.gate ?? (run.status === "not_started" ? "" : "analysis");
+  const gate = run.gate ? GATE_STAGE[run.gate] : undefined;
+  const stage = run.status === "completed" ? "completed" : gate?.stage ?? (run.status === "not_started" ? "" : "analysis");
   const stageIndex = STAGES.findIndex((s) => s.key === stage);
 
   return (
@@ -57,7 +64,7 @@ export default function AnalysisPanel({ project, sourceCount }: Props) {
             </p>
           </div>
           <button className="primary" disabled={!!busy || sourceCount === 0}
-            onClick={() => act("Running the agents: extraction, classification, five parallel analysts, then validation. This takes a minute…",
+            onClick={() => act("Running the agents: extraction, classification, then the review and compliance & security agents in parallel. This takes a minute…",
               () => api.startRun(project.id))}>
             {run.status === "not_started" ? "Run analysis" : "Restart analysis"}
           </button>
@@ -69,6 +76,15 @@ export default function AnalysisPanel({ project, sourceCount }: Props) {
         </ol>
       </section>
 
+      {run.status === "outdated" && (
+        <div className="alert warn">This analysis was started with an earlier version of the agent flow and cannot continue.
+          Click <strong>Restart analysis</strong> to run it with the current agents.</div>
+      )}
+      {gate && (
+        <div className="note">
+          <strong>{STAGES.find((s) => s.key === gate.stage)?.label}</strong> · {gate.step}
+        </div>
+      )}
       {busy && <div className="alert info" role="status"><span className="spinner" />{busy}</div>}
       {error && <div className="alert error">{error}</div>}
 

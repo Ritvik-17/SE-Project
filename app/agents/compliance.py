@@ -95,7 +95,7 @@ def compliance(state: ProjectState) -> ProjectState:
                     "obligation": m["obligation"], "period": m["retention_period"], "req_id": m["req_id"],
                     "evidence_ref": m["evidence_ref"], "citation": m.get("citation")}
                    for m in mappings if m["obligation_type"] in ("data_retention", "reporting")]
-    record(state["project_id"], "compliance_agent", "mapped_compliance",
+    record(state["project_id"], "compliance_security_agent", "mapped_compliance",
            {"queries": queries, "evidence_passages": len(hits), "mappings": len(mappings), "gaps": len(gaps),
             "checkpoints": len(checkpoints), "retention_and_reporting": len(obligations),
             "high_impact": sum(m["impact"] == "high" for m in mappings),

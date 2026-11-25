@@ -1,0 +1,43 @@
+The system shall let salaried customers apply for a personal loan entirely in a mobile app.
+The app shall be available in Hindi and English.
+The application process shall be fast and user-friendly.
+The system shall show the Key Fact Statement with EMI, APR, all fees and the repayment schedule before the borrower accepts or signs.
+Customers shall be able to upload salary slips and bank statements from the phone.
+The customer session shall last at least 30 minutes so customers are not logged out while uploading documents.
+Customers shall be able to track the status of their application in the app.
+Rejected applicants shall be told the principal reasons for rejection in writing within 7 days.
+Sanctioned loan amounts shall be disbursed directly to the borrower's own bank account on the same day.
+Release 1 shall cover unsecured personal loans to salaried customers from INR 50,000 to INR 10,00,000 with tenures of 12 to 60 months.
+The system shall automatically approve loans up to INR 10 lakh without manual review.
+Sales agents shall see their pipeline of leads and the status of each application they sourced.
+The product shall increase digital personal-loan disbursals by 30% within 12 months of launch.
+Release 1 shall go live by 31 March within a budget of INR 2 crore.
+The system shall check eligibility: age 21 to 60, at least 12 months of continuous employment and a credit score of at least 700.
+The system shall reject applications whose FOIR including the proposed EMI exceeds 50% of net monthly income.
+The automated decision engine shall approve only loans up to INR 5 lakh within policy; above INR 5 lakh a credit officer approves and above INR 15 lakh the regional credit head.
+Every override shall be recorded with a reason code and approver identity, and the preparer cannot approve the same case (maker-checker).
+The system shall detect duplicate applications using the same PAN or device within 30 days and refer them to the fraud team.
+The system shall produce a monthly portfolio report with approval rates and 30+ DPD delinquency for the risk committee.
+The borrower shall have a cooling-off period of at least 3 days after disbursement to exit by repaying principal and proportionate APR without penalty.
+The app shall show the grievance redressal officer's contact details and track complaints to resolution.
+Loan files shall be retained for 8 years after closure and rejected applications for 2 years from the decision date.
+The system shall capture explicit consent before pulling the credit report and keep the consent record.
+Every credit decision, override and change to customer data shall leave an audit trail of who did what and when.
+Customers shall sign in with an OTP to the registered mobile number and the app shall be bound to the device.
+A step-up OTP shall be required before the customer e-signs the loan agreement.
+Customer sessions shall time out after 10 minutes of inactivity.
+Staff users shall sign in through single sign-on with multi-factor authentication.
+Personal data shall be encrypted at rest and all connections shall use TLS 1.2 or higher.
+Security events shall be sent to the SIEM within 5 minutes.
+The system must be secure.
+The system shall fetch the credit report from the bureau API over mutual TLS within 3 seconds at the 95th percentile.
+If the credit bureau is unavailable, the application shall move to the manual underwriting queue.
+Loan accounts shall be created in the core banking system through a nightly batch file.
+Funds shall be disbursed in real time through the payments hub IMPS API.
+The platform shall support 2,000 concurrent applicants.
+The platform shall be 99.9% available monthly, excluding maintenance on Sundays 01:00-03:00.
+Credit officers shall have a work queue of referred applications, each decided within 4 working hours.
+Salary slips and bank statements shall be read by OCR, with manual review when extracted income differs from declared income.
+Disbursements shall be reconciled against the core banking system daily.
+Rejected applications shall be deleted after 90 days to save storage.
+Operations shall get reports as needed.

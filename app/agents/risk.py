@@ -43,6 +43,6 @@ def risk_analysis(state: ProjectState) -> ProjectState:
             "level": risk_level(likelihood * impact), "related_req_ids": [i for i in r.related_req_ids if i in ids],
         })
     risks.sort(key=lambda r: r["score"], reverse=True)
-    record(state["project_id"], "risk_analysis_agent", "assessed_risks",
+    record(state["project_id"], "review_agent", "assessed_risks",
            {lvl: sum(r["level"] == lvl for r in risks) for lvl in ("high", "medium", "low")})
     return {"risks": risks}
